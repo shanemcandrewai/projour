@@ -60,7 +60,7 @@ Express / Node
 
 Copy to public directory to docs
 
-###### Navagate to https://shanemcandrewai.github.io/smdb-ace/
+###### Navagate to https://shanemcandrewai.github.io/projour
 
 #### Error when deleting folder
 
