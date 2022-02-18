@@ -16,7 +16,7 @@ const getSec = async () => {
     debug(errRead);
     sec = (Math.random() + 1).toString(36).substring(3);
     try {
-      await writeFile('sessSec.txt', sec);
+      writeFile('sessSec.txt', sec);
     } catch (errWrite) {
       debug(errWrite);
     }
@@ -26,11 +26,19 @@ const getSec = async () => {
 
 app.use(express.static('docs'));
 
-app.use(session({
+const sess = {
   resave: false, // don't save session if unmodified
   saveUninitialized: false, // don't create session until something stored
   secret: await getSec(),
-}));
+  cookie: {},
+};
+
+if (app.get('env') === 'production') {
+  app.set('trust proxy', 1); // trust first proxy
+  sess.cookie.secure = true; // serve secure cookies
+}
+
+app.use(session(sess));
 
 app.use((req, res, next) => {
   if (!req.session.views) {
@@ -38,6 +46,7 @@ app.use((req, res, next) => {
   }
   req.session.views += 1;
   debug('xxx', req.session.views);
+  debug('xxI', req.session.id);
   next();
 });
 
