@@ -29,17 +29,19 @@ const getSec = async () => {
 };
 
 const authenticate = async (name, passw, fn) => {
-// async function authenticate(name, passw, fn) {
   try {
     const user = JSON.parse(await readFile('auth.json', 'utf8'))[name];
-    debug('xxx', user);
     // query the db for the given username
+
     if (!user) return fn(null, null);
+
     // apply the same algorithm to the POSTed password, applying
     // the hash against the pass / salt, if there is a match we
     // found the user
     hasher({ password: passw, salt: user.salt }, (err, pass, salt, hash) => {
       if (err) return fn(err);
+      debug('xxxuser', user);
+      debug('xxxhash ', hash);
       if (hash === user.hash) return fn(null, user);
       fn(null, null);
       return 0;
@@ -68,6 +70,17 @@ if (app.get('env') === 'production') {
 
 app.use(express.urlencoded({ extended: false }));
 app.use(session(sess));
+
+app.use((req, res, next) => {
+  const err = req.session.error;
+  const msg = req.session.success;
+  delete req.session.error;
+  delete req.session.success;
+  res.locals.message = '';
+  if (err) res.locals.message = `<p class="msg error">${err}</p>`;
+  if (msg) res.locals.message = `<p class="msg success">${msg}</p>`;
+  next();
+});
 
 app.use((req, res, next) => {
   if (!req.session.views) {
@@ -103,13 +116,14 @@ app.post('/login', (req, res, next) => {
         // Store the user's primary key
         // in the session store to be retrieved,
         // or in this case the entire user object
-        req.session.user = user;
-        req.session.success = `Authenticated as ${user.name
+        req.session.user = req.body.username;
+        req.session.success = `Authenticated as ${req.body.username
         } click to <a href="/logout">logout</a>. `
           + ' You may now access <a href="/restricted">/restricted</a>.';
         res.redirect('back');
       });
     } else {
+      debug('xxxelse', user);
       req.session.error = 'Authentication failed, please check your '
         + ' username and password.'
         + ' (use "tj" and "foobar")';
