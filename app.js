@@ -1,14 +1,14 @@
-import Debug from 'debug';
+import db from 'debug';
 import express from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import session from 'express-session';
-import filestore from 'session-file-store';
-import bkfd2Password from 'pbkdf2-password';
+import sfs from 'session-file-store';
+import pbp from 'pbkdf2-password';
 import path from 'path';
 
-const FileStore = filestore(session);
-const hasher = bkfd2Password();
-const debug = Debug('app');
+const FileStore = sfs(session);
+const hasher = pbp();
+const debug = db('app');
 const app = express();
 const port = 3000;
 
@@ -28,33 +28,28 @@ const getSec = async () => {
   return sec;
 };
 
-const getAuth = async () => {
-  let sec;
+const authenticate = async (name, passw, fn) => {
+// async function authenticate(name, passw, fn) {
   try {
-    sec = await readFile('auth.json', 'utf8');
+    const user = JSON.parse(await readFile('auth.json', 'utf8'))[name];
+    debug('xxx', user);
+    // query the db for the given username
+    if (!user) return fn(null, null);
+    // apply the same algorithm to the POSTed password, applying
+    // the hash against the pass / salt, if there is a match we
+    // found the user
+    hasher({ password: passw, salt: user.salt }, (err, pass, salt, hash) => {
+      if (err) return fn(err);
+      if (hash === user.hash) return fn(null, user);
+      fn(null, null);
+      return 0;
+    });
+    return 0;
   } catch (errRead) {
     debug(errRead);
+    return errRead;
   }
-  return JSON.parce(sec);
 };
-
-function authenticate(name, passw, fn) {
-  const user = getAuth()[name];
-  // query the db for the given username
-  if (!user) return fn(null, null);
-  // apply the same algorithm to the POSTed password, applying
-  // the hash against the pass / salt, if there is a match we
-  // found the user
-  hasher({ password: passw, salt: user.salt }, (err, pass, salt, hash) => {
-    if (err) return fn(err);
-    if (hash === user.hash) return fn(null, user);
-    fn(null, null);
-    return 0;
-  });
-  return 0;
-}
-
-app.use(express.static('docs'));
 
 const sess = {
   resave: false, // don't save session if unmodified
@@ -64,11 +59,14 @@ const sess = {
   store: new FileStore({}),
 };
 
+app.use(express.static('docs'));
+
 if (app.get('env') === 'production') {
   app.set('trust proxy', 1); // trust first proxy
   sess.cookie.secure = true; // serve secure cookies
 }
 
+app.use(express.urlencoded({ extended: false }));
 app.use(session(sess));
 
 app.use((req, res, next) => {
@@ -77,10 +75,6 @@ app.use((req, res, next) => {
   }
   req.session.views += 1;
   next();
-});
-
-app.get('/', (req, res) => {
-  res.send('Hello World!');
 });
 
 app.get('/foo', (req, res) => {
@@ -96,9 +90,7 @@ app.get('/logout', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  const abs = path.resolve('docs/login.html');
-  debug('xxx', abs);
-  res.sendFile(path.join(abs));
+  res.sendFile(path.resolve('docs/login.html'));
 });
 
 app.post('/login', (req, res, next) => {
