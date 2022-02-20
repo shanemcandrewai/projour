@@ -12,6 +12,11 @@ const hasher = pbp();
 const app = express();
 const port = 3000;
 
+// middleware
+
+app.use(express.static('docs'));
+app.use(express.urlencoded({ extended: false }));
+
 // retrieve or create session secret
 const getSec = async (secfile = 'sessSec.txt') => {
   try {
@@ -27,6 +32,35 @@ const getSec = async (secfile = 'sessSec.txt') => {
     return sec;
   }
 };
+
+const sess = {
+  resave: false, // don't save session if unmodified
+  saveUninitialized: false, // don't create session until something stored
+  secret: await getSec(),
+  cookie: {},
+  store: new FileStore({}),
+};
+
+if (app.get('env') === 'production') {
+  app.set('trust proxy', 1); // trust first proxy
+  sess.cookie.secure = true; // serve secure cookies
+}
+
+app.use(session(sess));
+
+// Session-persisted message middleware
+
+app.use((req, res, next) => {
+  const err = req.session.error;
+  const msg = req.session.success;
+  delete req.session.error;
+  delete req.session.success;
+
+  res.locals.message = '';
+  if (err) res.locals.message = `<p class="msg error">${err}</p>`;
+  if (msg) res.locals.message = `<p class="msg success">${msg}</p>`;
+  next();
+});
 
 // Authenticate using our user with server file
 const authenticate = async (name, passw, fn, authfile = 'auth.json') => {
@@ -48,51 +82,6 @@ const authenticate = async (name, passw, fn, authfile = 'auth.json') => {
   }
   return fn(null, null);
 };
-
-// middleware
-
-app.use(express.static('docs'));
-app.use(express.urlencoded({ extended: false }));
-
-const sess = {
-  resave: false, // don't save session if unmodified
-  saveUninitialized: false, // don't create session until something stored
-  secret: await getSec(),
-  cookie: {},
-  store: new FileStore({}),
-};
-
-if (app.get('env') === 'production') {
-  app.set('trust proxy', 1); // trust first proxy
-  sess.cookie.secure = true; // serve secure cookies
-}
-
-app.use(session(sess));
-
-// Session-persisted message middleware
-
-app.use((req, res, next) => {
-  debug('yyy');
-  if (!req.session.views) {
-    req.session.views = 0;
-  }
-  req.session.views += 1;
-  debug('xxx inc', req.session.views);
-  next();
-});
-
-app.use((req, res, next) => {
-  const err = req.session.error;
-  const msg = req.session.success;
-  delete req.session.error;
-  delete req.session.success;
-  debug('xxx', 'req.session.success deleted');
-
-  res.locals.message = '';
-  if (err) res.locals.message = `<p class="msg error">${err}</p>`;
-  if (msg) res.locals.message = `<p class="msg success">${msg}</p>`;
-  next();
-});
 
 const restrict = (req, res, next) => {
   if (req.session.user) {
@@ -148,13 +137,6 @@ app.post('/login', (req, res, next) => {
     }
     return 0;
   });
-});
-
-// visit counter
-
-app.get('/foo', (req, res) => {
-  debug('xxx in foo', req.session.views);
-  res.send(`you viewed this page ${req.session.views} times`);
 });
 
 app.listen(port, () => {
