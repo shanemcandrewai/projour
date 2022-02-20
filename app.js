@@ -1,57 +1,58 @@
 import db from 'debug';
 import express from 'express';
 import { readFile, writeFile } from 'fs/promises';
+import path from 'path';
 import session from 'express-session';
 import sfs from 'session-file-store';
 import pbp from 'pbkdf2-password';
-import path from 'path';
 
+const debug = db('app');
 const FileStore = sfs(session);
 const hasher = pbp();
-const debug = db('app');
 const app = express();
 const port = 3000;
 
-const getSec = async () => {
-  let sec;
+// retrieve or create session secret
+const getSec = async (secfile = 'sessSec.txt') => {
   try {
-    sec = await readFile('sessSec.txt', 'utf8');
+    return await readFile(secfile, 'utf8');
   } catch (errRead) {
     debug(errRead);
-    sec = (Math.random() + 1).toString(36).substring(3);
+    const sec = (Math.random() + 1).toString(36).substring(3);
     try {
-      writeFile('sessSec.txt', sec);
+      await writeFile(secfile, sec);
     } catch (errWrite) {
       debug(errWrite);
     }
+    return sec;
   }
-  return sec;
 };
 
-const authenticate = async (name, passw, fn) => {
+// Authenticate using our user with server file
+const authenticate = async (name, passw, fn, authfile = 'auth.json') => {
   try {
-    const user = JSON.parse(await readFile('auth.json', 'utf8'))[name];
+    debug('authenticating %s:%s', name, passw);
+    const user = JSON.parse(await readFile(authfile, 'utf8'))[name];
     // query the db for the given username
-
     if (!user) return fn(null, null);
-
     // apply the same algorithm to the POSTed password, applying
     // the hash against the pass / salt, if there is a match we
     // found the user
     hasher({ password: passw, salt: user.salt }, (err, pass, salt, hash) => {
       if (err) return fn(err);
-      debug('xxxuser', user);
-      debug('xxxhash ', hash);
       if (hash === user.hash) return fn(null, user);
-      fn(null, null);
-      return 0;
+      return fn(null, null);
     });
-    return 0;
   } catch (errRead) {
-    debug(errRead);
     return errRead;
   }
+  return fn(null, null);
 };
+
+// middleware
+
+app.use(express.static('docs'));
+app.use(express.urlencoded({ extended: false }));
 
 const sess = {
   resave: false, // don't save session if unmodified
@@ -61,37 +62,53 @@ const sess = {
   store: new FileStore({}),
 };
 
-app.use(express.static('docs'));
-
 if (app.get('env') === 'production') {
   app.set('trust proxy', 1); // trust first proxy
   sess.cookie.secure = true; // serve secure cookies
 }
 
-app.use(express.urlencoded({ extended: false }));
 app.use(session(sess));
+
+// Session-persisted message middleware
+
+app.use((req, res, next) => {
+  debug('yyy');
+  if (!req.session.views) {
+    req.session.views = 0;
+  }
+  req.session.views += 1;
+  debug('xxx inc', req.session.views);
+  next();
+});
 
 app.use((req, res, next) => {
   const err = req.session.error;
   const msg = req.session.success;
   delete req.session.error;
   delete req.session.success;
+  debug('xxx', 'req.session.success deleted');
+
   res.locals.message = '';
   if (err) res.locals.message = `<p class="msg error">${err}</p>`;
   if (msg) res.locals.message = `<p class="msg success">${msg}</p>`;
   next();
 });
 
-app.use((req, res, next) => {
-  if (!req.session.views) {
-    req.session.views = 0;
+const restrict = (req, res, next) => {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
   }
-  req.session.views += 1;
-  next();
+};
+
+app.get('/', (req, res) => {
+  res.redirect('/login');
 });
 
-app.get('/foo', (req, res) => {
-  res.send(`you viewed this page ${req.session.views} times`);
+app.get('/restricted', restrict, (req, res) => {
+  res.send('Wahoo! restricted area, click to <a href="/logout">logout</a>');
 });
 
 app.get('/logout', (req, res) => {
@@ -107,6 +124,7 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', (req, res, next) => {
+  // authenticate(req.body.username, req.body.password, (err, user) => {
   authenticate(req.body.username, req.body.password, (err, user) => {
     if (err) return next(err);
     if (user) {
@@ -123,14 +141,20 @@ app.post('/login', (req, res, next) => {
         res.redirect('back');
       });
     } else {
-      debug('xxxelse', user);
       req.session.error = 'Authentication failed, please check your '
         + ' username and password.'
         + ' (use "tj" and "foobar")';
-      res.redirect('/login');
+      // res.redirect('/login');
     }
     return 0;
   });
+});
+
+// visit counter
+
+app.get('/foo', (req, res) => {
+  debug('xxx in foo', req.session.views);
+  res.send(`you viewed this page ${req.session.views} times`);
 });
 
 app.listen(port, () => {
