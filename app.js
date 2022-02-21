@@ -55,6 +55,8 @@ app.use(session(sess));
 
 app.use((req, res, next) => {
   debug('xxx Session-persisted message middleware');
+  debug('xxx method', req.method);
+  debug('xxx originalUrl', req.originalUrl);
   const err = req.session.error;
   const msg = req.session.success;
   delete req.session.error;
@@ -115,11 +117,10 @@ app.get('/logout', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(path.resolve('docs/login.html'));
+  res.sendFile(path.resolve('docs/sign-in/index.html'));
 });
 
 app.post('/login', (req, res, next) => {
-  // authenticate(req.body.username, req.body.password, (err, user) => {
   authenticate(req.body.username, req.body.password, (err, user) => {
     if (err) return next(err);
     if (user) {
