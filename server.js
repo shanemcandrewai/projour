@@ -1,4 +1,3 @@
-import db from 'debug';
 import express from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
@@ -7,11 +6,11 @@ import helmet from 'helmet';
 import sfs from 'session-file-store';
 import pbp from 'pbkdf2-password';
 
-const debug = db('app');
 const FileStore = sfs(session);
 const hasher = pbp();
 const app = express();
 const port = process.env.PORT || 3000;
+/* eslint-disable no-console */
 
 // middleware
 
@@ -24,12 +23,12 @@ const getSec = async (secfile = 'sessSec.txt') => {
   try {
     return await readFile(secfile, 'utf8');
   } catch (errRead) {
-    debug(errRead);
+    console.log(errRead);
     const sec = (Math.random() + 1).toString(36).substring(3);
     try {
       await writeFile(secfile, sec);
     } catch (errWrite) {
-      debug(errWrite);
+      console.log(errWrite);
     }
     return sec;
   }
@@ -54,9 +53,9 @@ app.use(session(sess));
 // Session-persisted message middleware
 
 app.use((req, res, next) => {
-  debug('xxx Session-persisted message middleware');
-  debug('xxx method', req.method);
-  debug('xxx originalUrl', req.originalUrl);
+  console.log('xxx Session-persisted message middleware');
+  console.log('xxx method', req.method);
+  console.log('xxx originalUrl', req.originalUrl);
   const err = req.session.error;
   const msg = req.session.success;
   delete req.session.error;
@@ -71,7 +70,7 @@ app.use((req, res, next) => {
 // Authenticate using our user with server file
 const authenticate = async (name, passw, fn, authfile = 'auth.json') => {
   try {
-    // debug('authenticating %s:%s', name, passw);
+    // console.log('authenticating %s:%s', name, passw);
     const user = JSON.parse(await readFile(authfile, 'utf8'))[name];
     // query the db for the given username
     if (!user) return fn(null, null);
@@ -90,7 +89,7 @@ const authenticate = async (name, passw, fn, authfile = 'auth.json') => {
 };
 
 const restrict = (req, res, next) => {
-  debug('xxx restrict');
+  console.log('xxx restrict');
   if (req.session.user) {
     next();
   } else {
@@ -110,7 +109,7 @@ app.get('/restricted', restrict, (req, res) => {
 app.get('/logout', (req, res) => {
   // destroy the user's session to log them out
   // will be re-created next request
-  debug('xxx destroy');
+  console.log('xxx destroy');
   req.session.destroy(() => {
     res.redirect('/');
   });
@@ -126,7 +125,7 @@ app.post('/login', (req, res, next) => {
     if (user) {
       // Regenerate session when signing in
       // to prevent fixation
-      debug('xxx regenerate');
+      console.log('xxx regenerate');
       req.session.regenerate(() => {
         // Store the user's primary key
         // in the session store to be retrieved,
@@ -137,7 +136,7 @@ app.post('/login', (req, res, next) => {
           + ' You may now access <a href="/restricted">/restricted</a>.';
         res.redirect('back');
       });
-      debug('xxx regenerate finished');
+      console.log('xxx regenerate finished');
     } else {
       req.session.error = 'Authentication failed, please check your '
         + ' username and password.'
@@ -149,5 +148,5 @@ app.post('/login', (req, res, next) => {
 });
 
 app.listen(port, () => {
-  debug(`Example app listening on port ${port}`);
+  console.log(`xxx Example app listening on port ${port}`);
 });

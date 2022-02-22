@@ -19,7 +19,6 @@
   },
   "homepage": "https://github.com/shanemcandrewai/projour#readme",
   "dependencies": {
-    "debug": "^4.3.3",
     "express": "^4.17.2",
     "express-session": "^1.17.2",
     "helmet": "^5.0.2",
