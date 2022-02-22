@@ -4,10 +4,9 @@ import path from 'path';
 import session from 'express-session';
 import helmet from 'helmet';
 import sfs from 'session-file-store';
-import pbp from 'pbkdf2-password';
+import argon2 from 'argon2';
 
 const FileStore = sfs(session);
-const hasher = pbp();
 const app = express();
 const port = process.env.PORT || 3000;
 /* eslint-disable no-console */
@@ -77,11 +76,22 @@ const authenticate = async (name, passw, fn, authfile = 'auth.json') => {
     // apply the same algorithm to the POSTed password, applying
     // the hash against the pass / salt, if there is a match we
     // found the user
-    hasher({ password: passw, salt: user.salt }, (err, pass, salt, hash) => {
-      if (err) return fn(err);
-      if (hash === user.hash) return fn(null, user);
-      return fn(null, null);
-    });
+
+    try {
+      if (await argon2.verify(user.hash, passw)) {
+        fn(null, user);
+      } else {
+        fn('password did not match');
+      }
+    } catch (err) {
+      fn(err);
+    }
+
+    // hasher({ password: passw, salt: user.salt }, (err, pass, salt, hash) => {
+    // if (err) return fn(err);
+    // if (hash === user.hash) return fn(null, user);
+    // return fn(null, null);
+    // });
   } catch (errRead) {
     return errRead;
   }
