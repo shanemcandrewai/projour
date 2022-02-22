@@ -11,7 +11,7 @@ const debug = db('app');
 const FileStore = sfs(session);
 const hasher = pbp();
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // middleware
 
