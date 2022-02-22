@@ -91,3 +91,27 @@ change privacy_file_unique_origin to false in about:config
 #### git switch to tagged version (equivalent to https://github.com/ajaxorg/ace/tree/v1.4.12)
 
     git checkout v1.4.12
+
+### [Heroku](https://projour.herokuapp.com)
+#### [Installation](https://devcenter.heroku.com/articles/heroku-cli#install-the-heroku-cli)
+[Windows 64 bit installer](https://cli-assets.heroku.com/heroku-x64.exe)
+#### [Local testing](https://devcenter.heroku.com/articles/heroku-local)
+    heroku local
+#### [Verify remote repository is tracked](https://git-scm.com/docs/git-remote)
+    git remote -v
+#### app checks
+- must be named `server.js` for `npm start`
+- include `process.env.PORT` in `const port = process.env.PORT || 3000`;
+##### Expected output
+    heroku	https://git.heroku.com/projour.git (fetch)
+    heroku	https://git.heroku.com/projour.git (push)
+    origin	https://github.com/shanemcandrewai/projour.git (fetch)
+    origin	https://github.com/shanemcandrewai/projour.git (push)
+###### [If heroku missing, add remote to local repository](https://devcenter.heroku.com/articles/git#creating-a-heroku-remote)
+    heroku create
+    heroku login -i
+    heroku git:remote -a projour
+##### [Deploy code](https://devcenter.heroku.com/articles/git#deploying-code)
+    git push heroku master
+##### [App URL](https://dashboard.heroku.com/apps/projour/settings)
+    https://projour.herokuapp.com/
