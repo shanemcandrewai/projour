@@ -13,13 +13,10 @@ const port = process.env.PORT || 3000;
 
 // middleware
 
-app.use(helmet());
-
 app.use(
   helmet.contentSecurityPolicy({
-
     directives: {
-      connectSrc: ["'self'", 'dropboxapi.com'],
+      connectSrc: ['https://content.dropboxapi.com/2/files/upload'],
     },
   }),
 );
