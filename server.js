@@ -14,6 +14,16 @@ const port = process.env.PORT || 3000;
 // middleware
 
 app.use(helmet());
+
+app.use(
+  helmet.contentSecurityPolicy({
+
+    directives: {
+      connectSrc: ["'self'", 'dropboxapi.com'],
+    },
+  }),
+);
+
 app.use(express.static('docs'));
 app.use(express.urlencoded({ extended: false }));
 
