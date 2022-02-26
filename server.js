@@ -16,7 +16,12 @@ const port = process.env.PORT || 3000;
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
-      connectSrc: ['https://content.dropboxapi.com/2/files/upload'],
+      // connectSrc: ['self', 'https://content.dropboxapi.com/2/files/upload', 'https://www.dropbox.com/oauth2/authorize?client_id=qz0krgp7dd3kom6&response_type=code'],
+      connectSrc: ['https://www.dropbox.com/oauth2/authorize'],
+      // connectSrc: ['self', 'https://content.dropboxapi.com/2/files/upload', 'https://www.dropbox.com/oauth2/authorize'],
+      // defaultSrc: ['self', 'https://content.dropboxapi.com/2/files/upload', 'https://www.dropbox.com/oauth2/authorize'],
+      // defaultSrc: ['https://www.dropbox.com/oauth2/authorize'],
+      // defaultSrc: ['self'],
     },
   }),
 );
@@ -93,12 +98,6 @@ const authenticate = async (name, passw, fn, authfile = 'auth.json') => {
     } catch (err) {
       fn(err);
     }
-
-    // hasher({ password: passw, salt: user.salt }, (err, pass, salt, hash) => {
-    // if (err) return fn(err);
-    // if (hash === user.hash) return fn(null, user);
-    // return fn(null, null);
-    // });
   } catch (errRead) {
     return errRead;
   }
