@@ -17,7 +17,7 @@ app.use(
   helmet.contentSecurityPolicy({
     directives: {
       // connectSrc: ['self', 'https://content.dropboxapi.com/2/files/upload', 'https://www.dropbox.com/oauth2/authorize?client_id=qz0krgp7dd3kom6&response_type=code'],
-      connectSrc: ['https://www.dropbox.com/oauth2/authorize'],
+      connectSrc: ['https://www.dropbox.com/oauth2/authorize', 'https://api.dropboxapi.com/oauth2/token'],
       // connectSrc: ['self', 'https://content.dropboxapi.com/2/files/upload', 'https://www.dropbox.com/oauth2/authorize'],
       // defaultSrc: ['self', 'https://content.dropboxapi.com/2/files/upload', 'https://www.dropbox.com/oauth2/authorize'],
       // defaultSrc: ['https://www.dropbox.com/oauth2/authorize'],
