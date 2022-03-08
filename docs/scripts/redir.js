@@ -50,8 +50,8 @@ const test = async () => {
         redirect_uri: 'http://localhost:3000/redir.html',
       },
     );
-    console.log('tokenResp', tokenResp);
-    return await upload(tokenResp.access_token, { answer: 42 });
+    await upload(tokenResp.access_token, { answer: 44 });
+    console.log(await upload(tokenResp.access_token, { answer: 45 }));
   } catch (err) {
     console.log('xxx3');
     console.log(err);
