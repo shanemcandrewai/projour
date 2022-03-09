@@ -1,0 +1,3 @@
+redis-cli -h redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com -p 11092 -a [default user pasword]
+
+redis-cli -h redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com -p 11092 --user admin --pass [password]
