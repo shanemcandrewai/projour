@@ -3,10 +3,8 @@ import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import session from 'express-session';
 import helmet from 'helmet';
-import sfs from 'session-file-store';
 import argon2 from 'argon2';
 
-const FileStore = sfs(session);
 const app = express();
 const port = process.env.PORT || 3000;
 /* eslint-disable no-console */
@@ -47,7 +45,6 @@ const sess = {
   saveUninitialized: false, // don't create session until something stored
   secret: await getSec(),
   cookie: {},
-  store: new FileStore(),
   name: 'sessionId',
 };
 
