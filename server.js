@@ -14,9 +14,14 @@ const port = process.env.PORT || 3000;
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
-      connectSrc: ['https://www.dropbox.com/oauth2/authorize',
+      connectSrc: [
+        'https://www.dropbox.com/oauth2/authorize',
         'https://api.dropboxapi.com/oauth2/token',
-        'https://content.dropboxapi.com/2/files/upload'],
+        'https://content.dropboxapi.com/2/files/upload',
+      ],
+      scriptSrc: [
+        'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
+      ],
     },
   }),
 );
@@ -141,8 +146,7 @@ app.post('/login', (req, res, next) => {
         // in the session store to be retrieved,
         // or in this case the entire user object
         req.session.user = req.body.username;
-        req.session.success = `Authenticated as ${req.body.username
-        } click to <a href="/logout">logout</a>. `
+        req.session.success = `Authenticated as ${req.body.username} click to <a href="/logout">logout</a>. `
           + ' You may now access <a href="/restricted">/restricted</a>.';
         res.redirect('back');
       });
