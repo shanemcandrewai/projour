@@ -3,11 +3,41 @@ import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import session from 'express-session';
 import helmet from 'helmet';
-import argon2 from 'argon2';
+import { createClient } from 'redis';
+import { createLogger, format, transports } from 'winston';
 
 const app = express();
 const port = process.env.PORT || 3000;
-/* eslint-disable no-console */
+
+const logger = createLogger({
+  level: 'info',
+  format: format.combine(
+    format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss',
+    }),
+    format.errors({ stack: true }),
+    format.splat(),
+    format.json(),
+  ),
+  defaultMeta: { service: 'projour' },
+  transports: [
+    //
+    // - Write all logs with importance level of `error` or less to `error.log`
+    // - Write all logs with importance level of `info` or less to `combined.log`
+    //
+    new transports.File({ filename: 'error.log', level: 'error' }),
+    new transports.File({ filename: 'combined.log' }),
+  ],
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new transports.Console({
+    format: format.combine(
+      format.colorize(),
+      format.simple(),
+    ),
+  }));
+}
 
 // middleware
 
@@ -34,12 +64,12 @@ const getSec = async (secfile = 'sessSec.txt') => {
   try {
     return await readFile(secfile, 'utf8');
   } catch (errRead) {
-    console.log(errRead);
-    const sec = (Math.random() + 1).toString(36).substring(3);
+    logger.error(errRead);
+    const sec = (Math.random() + 1).toString(36).substring(2);
     try {
       await writeFile(secfile, sec);
     } catch (errWrite) {
-      console.log(errWrite);
+      logger.error(errWrite);
     }
     return sec;
   }
@@ -63,9 +93,6 @@ app.use(session(sess));
 // Session-persisted message middleware
 
 app.use((req, res, next) => {
-  console.log('xxx Session-persisted message middleware');
-  console.log('xxx method', req.method);
-  console.log('xxx originalUrl', req.originalUrl);
   const err = req.session.error;
   const msg = req.session.success;
   delete req.session.error;
@@ -77,34 +104,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Authenticate using our user with server file
-const authenticate = async (name, passw, fn, authfile = 'auth.json') => {
-  try {
-    // console.log('authenticating %s:%s', name, passw);
-    const user = JSON.parse(await readFile(authfile, 'utf8'))[name];
-    // query the db for the given username
-    if (!user) return fn(null, null);
-    // apply the same algorithm to the POSTed password, applying
-    // the hash against the pass / salt, if there is a match we
-    // found the user
-
-    try {
-      if (await argon2.verify(user.hash, passw)) {
-        fn(null, user);
-      } else {
-        fn('password did not match');
-      }
-    } catch (err) {
-      fn(err);
-    }
-  } catch (errRead) {
-    return errRead;
-  }
-  return fn(null, null);
-};
-
 const restrict = (req, res, next) => {
-  console.log('xxx restrict');
+  logger.error('request restricted', req.originalUrl);
   if (req.session.user) {
     next();
   } else {
@@ -124,43 +125,42 @@ app.get('/restricted', restrict, (req, res) => {
 app.get('/logout', (req, res) => {
   // destroy the user's session to log them out
   // will be re-created next request
-  console.log('xxx destroy');
+  logger.info('logging out', req.session.user);
   req.session.destroy(() => {
     res.redirect('/');
   });
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(path.resolve('docs/sign-in/index.html'));
+  res.sendFile(path.resolve('docs/login/login.html'));
 });
 
-app.post('/login', (req, res, next) => {
-  authenticate(req.body.username, req.body.password, (err, user) => {
-    if (err) return next(err);
-    if (user) {
-      // Regenerate session when signing in
-      // to prevent fixation
-      console.log('xxx regenerate');
-      req.session.regenerate(() => {
-        // Store the user's primary key
-        // in the session store to be retrieved,
-        // or in this case the entire user object
-        req.session.user = req.body.username;
-        req.session.success = `Authenticated as ${req.body.username} click to <a href="/logout">logout</a>. `
-          + ' You may now access <a href="/restricted">/restricted</a>.';
-        res.redirect('back');
-      });
-      console.log('xxx regenerate finished');
-    } else {
-      req.session.error = 'Authentication failed, please check your '
-        + ' username and password.'
-        + ' (use "tj" and "foobar")';
-      // res.redirect('/login');
+app.post('/login', (req) => {
+  logger.info('logging in');
+  const loginRedis = async () => {
+    logger.info('url', req.body.url);
+    console.log('xxx', req.body.url);
+    logger.info('username', req.body.user);
+    logger.info('password', req.body.password);
+    const client = createClient({
+      url: req.body.url,
+      username: req.body.user,
+      password: req.body.password,
+    });
+    client.on('error', (err) => logger.error('Redis Client Error', err));
+    try {
+      await client.connect();
+      logger.info('connected');
+      await client.set('key1', 'value2');
+      logger.info(await client.get('key1'));
+      await client.quit();
+    } catch (e) {
+      logger.info('xxx', 'failed');
     }
-    return 0;
-  });
+  };
+  loginRedis();
 });
 
 app.listen(port, () => {
-  console.log(`xxx Example app listening on port ${port}`);
+  logger.info(`Example app listening on port ${port}`);
 });

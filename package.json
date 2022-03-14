@@ -19,11 +19,11 @@
   },
   "homepage": "https://github.com/shanemcandrewai/projour#readme",
   "dependencies": {
-    "argon2": "^0.28.4",
     "express": "^4.17.2",
     "express-session": "^1.17.2",
     "helmet": "^5.0.2",
-    "redis": "^4.0.4"
+    "redis": "^4.0.4",
+    "winston": "^3.6.0"
   },
   "devDependencies": {
     "eslint": "^8.9.0",

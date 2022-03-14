@@ -18,6 +18,16 @@
         <img class="mb-4" src="../assets/images/eye-clipart.svg" alt="eye" />
         <h1 class="h3 mb-3 fw-normal">Please log in</h1>
         <div class="form-floating">
+          <input
+            name = 'url'
+            type="url"
+            class="form-control"
+            id="floatingUser"
+            value="redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092"
+          />
+          <label for="floatingRedis">Data</label>
+        </div>
+        <div class="form-floating">
           <input type="text" class="form-control" id="floatingUser" />
           <label for="floatingUser">User</label>
         </div>
@@ -25,7 +35,12 @@
           <input type="password" class="form-control" id="floatingPassword" />
           <label for="floatingPassword">Password</label>
         </div>
-        <button class="w-100 btn btn-lg btn-primary" type="submit">
+        <button
+          class="w-100 btn btn-lg btn-primary"
+          type="submit"
+          formaction="/login"
+          formmethod="post"
+        >
           Log in
         </button>
       </form>
