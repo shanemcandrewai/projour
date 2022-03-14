@@ -80,7 +80,7 @@ const getSec = async (secfile = 'sessSec.txt') => {
 const redisClient = createClient({
   url: 'redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092',
   username: 'admin',
-  password: 'Za8\bAMR',
+  password: '[password]',
   legacyMode: true,
 });
 
