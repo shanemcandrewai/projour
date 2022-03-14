@@ -6,7 +6,7 @@ const test = async () => {
     username: 'sss',
     password: 'Ls9giU2U;',
   });
-  client.on('error', (err) => console.log('Redis Client Error', err));
+  // client.on('error', (err) => console.log('Redis Client Error', err));
 
   try {
     await client.connect();
@@ -15,7 +15,7 @@ const test = async () => {
     console.log(await client.get('key1'));
     await client.quit();
   } catch (e) {
-    console.log('xxx', 'failed');
+    console.log('xxx', 'failed', e);
   }
 };
-await test();
+test();

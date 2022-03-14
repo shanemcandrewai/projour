@@ -19,20 +19,30 @@
         <h1 class="h3 mb-3 fw-normal">Please log in</h1>
         <div class="form-floating">
           <input
-            name = 'url'
+            name="url"
             type="url"
             class="form-control"
-            id="floatingUser"
+            id="floatingUrl"
             value="redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092"
           />
           <label for="floatingRedis">Data</label>
         </div>
         <div class="form-floating">
-          <input type="text" class="form-control" id="floatingUser" />
+          <input
+            name="user"
+            type="text"
+            class="form-control"
+            id="floatingUser"
+          />
           <label for="floatingUser">User</label>
         </div>
         <div class="form-floating">
-          <input type="password" class="form-control" id="floatingPassword" />
+          <input
+            name="password"
+            type="password"
+            class="form-control"
+            id="floatingPassword"
+          />
           <label for="floatingPassword">Password</label>
         </div>
         <button

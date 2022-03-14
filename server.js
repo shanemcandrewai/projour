@@ -2,11 +2,13 @@ import express from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import session from 'express-session';
+import redis from 'connect-redis';
 import helmet from 'helmet';
 import { createClient } from 'redis';
 import { createLogger, format, transports } from 'winston';
 
 const app = express();
+const RedisStore = redis(session);
 const port = process.env.PORT || 3000;
 
 const logger = createLogger({
@@ -17,19 +19,19 @@ const logger = createLogger({
     }),
     format.errors({ stack: true }),
     format.splat(),
-    format.json(),
+    format.simple(),
   ),
   defaultMeta: { service: 'projour' },
   transports: [
-    //
-    // - Write all logs with importance level of `error` or less to `error.log`
-    // - Write all logs with importance level of `info` or less to `combined.log`
-    //
-    new transports.File({ filename: 'error.log', level: 'error' }),
-    new transports.File({ filename: 'combined.log' }),
+    new transports.File({ filename: 'projour-error.log', level: 'error' }),
+    new transports.File({ filename: 'projour-start-combined.log' }),
   ],
 });
 
+//
+// If we're not in production then **ALSO** log to the `console`
+// with the colorized simple format.
+//
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new transports.Console({
     format: format.combine(
@@ -64,18 +66,26 @@ const getSec = async (secfile = 'sessSec.txt') => {
   try {
     return await readFile(secfile, 'utf8');
   } catch (errRead) {
-    logger.error(errRead);
+    logger.error({ message: 'readFile', secfile, errRead });
     const sec = (Math.random() + 1).toString(36).substring(2);
     try {
       await writeFile(secfile, sec);
     } catch (errWrite) {
-      logger.error(errWrite);
+      logger.error({ message: 'writeFile', secfile, errWrite });
     }
     return sec;
   }
 };
 
+const redisClient = createClient({
+  url: 'redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092',
+  username: 'admin',
+  password: 'Za8\bAMR',
+  legacyMode: true,
+});
+
 const sess = {
+  store: new RedisStore({ client: redisClient }),
   resave: false, // don't save session if unmodified
   saveUninitialized: false, // don't create session until something stored
   secret: await getSec(),
@@ -105,7 +115,7 @@ app.use((req, res, next) => {
 });
 
 const restrict = (req, res, next) => {
-  logger.error('request restricted', req.originalUrl);
+  logger.error({ message: 'request restricted', originalUrl: req.originalUrl });
   if (req.session.user) {
     next();
   } else {
@@ -125,7 +135,7 @@ app.get('/restricted', restrict, (req, res) => {
 app.get('/logout', (req, res) => {
   // destroy the user's session to log them out
   // will be re-created next request
-  logger.info('logging out', req.session.user);
+  logger.info({ message: 'logging out', user: req.session.user });
   req.session.destroy(() => {
     res.redirect('/');
   });
@@ -135,32 +145,28 @@ app.get('/login', (req, res) => {
   res.sendFile(path.resolve('docs/login/login.html'));
 });
 
-app.post('/login', (req) => {
+app.post('/login', (req, res) => {
   logger.info('logging in');
   const loginRedis = async () => {
-    logger.info('url', req.body.url);
-    console.log('xxx', req.body.url);
-    logger.info('username', req.body.user);
-    logger.info('password', req.body.password);
+    logger.info({ message: 'url', url: req.body.url });
+    logger.info({ message: 'user', user: req.body.user });
+    logger.info({ message: 'password', password: req.body.password });
     const client = createClient({
       url: req.body.url,
       username: req.body.user,
       password: req.body.password,
     });
-    client.on('error', (err) => logger.error('Redis Client Error', err));
     try {
       await client.connect();
-      logger.info('connected');
-      await client.set('key1', 'value2');
-      logger.info(await client.get('key1'));
-      await client.quit();
-    } catch (e) {
-      logger.info('xxx', 'failed');
+      req.session.user = req.body.user;
+      res.send(req.body.user);
+    } catch (err) {
+      console.log('xxx error', err);
     }
   };
   loginRedis();
 });
 
 app.listen(port, () => {
-  logger.info(`Example app listening on port ${port}`);
+  logger.info({ message: 'Node.js HTTP server listening', script: import.meta.url, port });
 });
