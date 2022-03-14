@@ -10,12 +10,16 @@ const test = async () => {
 
   try {
     await client.connect();
-    console.log('xxx', 'connected');
-    await client.set('key1', 'value2');
-    console.log(await client.get('key1'));
+    client.del('sessionKey');
+    let sessionKey = await client.get('sessionKey');
+    if (sessionKey === null) {
+      sessionKey = (Math.random() + 1).toString(36).substring(2);
+      client.set('sessionKey', sessionKey);
+    }
+    console.log('xxx sessionKey', sessionKey);
     await client.quit();
-  } catch (e) {
-    console.log('xxx', 'failed', e);
+  } catch (err) {
+    console.log('xxx client failed', err);
   }
 };
 test();
