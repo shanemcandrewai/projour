@@ -10,7 +10,7 @@ const test = async () => {
 
   try {
     await client.connect();
-    client.del('sessionKey');
+    console.log('xxx', 'connected');
     let sessionKey = await client.get('sessionKey');
     if (sessionKey === null) {
       sessionKey = (Math.random() + 1).toString(36).substring(2);

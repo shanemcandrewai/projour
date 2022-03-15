@@ -9,6 +9,7 @@ import { createLogger, format, transports } from 'winston';
 const app = express();
 const RedisStore = redis(session);
 const port = process.env.PORT || 3000;
+app.set('view engine', 'pug');
 
 const logger = createLogger({
   level: 'info',
@@ -60,16 +61,50 @@ app.use(
 app.use(express.static('docs'));
 app.use(express.urlencoded({ extended: false }));
 
-app.get('/login', (res) => {
-  res.sendFile(path.resolve('docs/login/login.html'));
+// const useRedisSession = async () => {
+const redisClient = createClient({
+  url: app.locals.url,
+  username: app.locals.user,
+  password: app.locals.password,
+  legacyMode: true,
 });
 
-app.post('/login', (req, res, next) => {
-  logger.info('logging in');
+const sessionOptions = {
+  store: new RedisStore({ client: redisClient }),
+  resave: false, // don't save session if unmodified
+  saveUninitialized: false, // don't create session until something stored
+  secret: app.locals.sessSecret,
+  cookie: {},
+  name: 'sessionId',
+};
+
+if (app.get('env') === 'production') {
+  app.set('trust proxy', 1); // trust first proxy
+  sessionOptions.cookie.secure = true; // serve secure cookies
+}
+
+logger.info({ message: 'sessionOptions.secret', secret: sessionOptions.secret });
+if (sessionOptions.secret) {
+  logger.info({ message: 'use session' });
+  app.use(session(sessionOptions));
+}
+// };
+
+app.get('/', (req, res) => {
+  logger.info({ message: 'home', id: req.sessionId });
+  if (app.locals.user) {
+    res.sendFile(path.resolve('docs/dashboard/dashboard.html'));
+  } else {
+    res.render('login');
+  }
+});
+
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+app.post('/login', (req, res) => {
   const loginRedis = async () => {
-    logger.info({ message: 'url', url: req.body.url });
-    logger.info({ message: 'user', user: req.body.user });
-    logger.info({ message: 'password', password: req.body.password });
     const client = createClient({
       url: req.body.url,
       username: req.body.user,
@@ -77,56 +112,31 @@ app.post('/login', (req, res, next) => {
     });
     try {
       await client.connect();
-      let sessionKey = await client.get('sessionKey');
-      if (sessionKey === null) {
-        sessionKey = (Math.random() + 1).toString(36).substring(2);
-        client.set('sessionKey', sessionKey);
+      app.locals.sessSecret = await client.get('sessSecret');
+      if (app.locals.sessSecret === null) {
+        app.locals.sessSecret = (Math.random() + 1).toString(36).substring(2);
+        client.set('sessSecret', app.locals.sessSecret);
       }
-      const redisClient = createClient({
-        url: req.body.url,
-        username: req.body.user,
-        password: req.body.password,
-        legacyMode: true,
-      });
-      app.locals.sess = {
-        store: new RedisStore({ client: redisClient }),
-        resave: false, // don't save session if unmodified
-        saveUninitialized: false, // don't create session until something stored
-        secret: sessionKey,
-        cookie: {},
-        name: 'sessionId',
-      };
+      app.locals.url = req.body.url;
+      app.locals.user = req.body.user;
+      app.locals.password = req.body.password;
+      // await useRedisSession();
+      res.redirect('/');
     } catch (err) {
-      console.log('xxx error', err);
+      logger.error({ message: err.toString(), function: 'redis client.connect' });
+      res.render('login', { text: 'Message from: ', message: err.toString(), from: req.body.url });
     }
   };
   loginRedis();
-  next();
 });
 
-if (!app.locals.sess && app.get('env') === 'production') {
-  app.set('trust proxy', 1); // trust first proxy
-  app.locals.sess.cookie.secure = true; // serve secure cookies
-}
-
-if (app.locals.sess) {
-  logger.info({ message: 'sess', sess: app.locals.sess });
-  app.use(session(app.locals.sess));
-}
-
 const restrict = (req, res, next) => {
-  logger.error({ message: 'request restricted', originalUrl: req.originalUrl });
-  if (req.session.user) {
+  if (app.locals.user) {
     next();
   } else {
-    req.session.error = 'Access denied!';
     res.redirect('/login');
   }
 };
-
-app.get('/', (req, res) => {
-  res.redirect('/login');
-});
 
 app.get('/restricted', restrict, (req, res) => {
   res.send('Wahoo! restricted area, click to <a href="/logout">logout</a>');
@@ -135,7 +145,7 @@ app.get('/restricted', restrict, (req, res) => {
 app.get('/logout', (req, res) => {
   // destroy the user's session to log them out
   // will be re-created next request
-  logger.info({ message: 'logging out', user: req.session.user });
+  logger.info({ message: 'logging out', user: app.locals.user });
   req.session.destroy(() => {
     res.redirect('/');
   });
