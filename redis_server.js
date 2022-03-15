@@ -1,21 +1,69 @@
+import helmet from 'helmet';
 import express from 'express';
 import session from 'express-session';
 import { createClient } from 'redis';
 import redis from 'connect-redis';
-
-/* eslint no-console: ["error", { allow: ["log"] }] */
+import { createLogger, format, transports } from 'winston';
 
 const app = express();
 const RedisStore = redis(session);
 const port = process.env.PORT || 3000;
+app.set('view engine', 'pug');
+
+const logger = createLogger({
+  level: 'info',
+  format: format.combine(
+    format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss',
+    }),
+    format.errors({ stack: true }),
+    format.splat(),
+    format.simple(),
+  ),
+  defaultMeta: { service: 'projour' },
+  transports: [
+    new transports.File({ filename: 'projour-error.log', level: 'error' }),
+    new transports.File({ filename: 'projour-start-combined.log' }),
+  ],
+});
+
+//
+// If we're not in production then **ALSO** log to the `console`
+// with the colorized simple format.
+//
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new transports.Console({
+    format: format.combine(
+      format.colorize(),
+      format.simple(),
+    ),
+  }));
+}
+
+// middleware
+
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      connectSrc: [
+        'https://www.dropbox.com/oauth2/authorize',
+        'https://api.dropboxapi.com/oauth2/token',
+        'https://content.dropboxapi.com/2/files/upload',
+      ],
+      scriptSrc: [
+        'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
+      ],
+    },
+  }),
+);
+app.use(express.static('docs'));
+app.use(express.urlencoded({ extended: false }));
 
 const redisClientSecret = createClient({
   url: 'redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092',
   username: 'sss',
   password: [password],
 });
-
-redisClientSecret.on('error', (err) => console.log('Redis Client Error', err));
 
 let sessSecret;
 try {
@@ -26,23 +74,23 @@ try {
     await redisClientSecret.set('sessSecret', sessSecret);
   }
 } catch (err) {
-  console.log('xxx redisClientSecret.connect', err.toString());
+  logger.error({ function: 'redisClientSecret.connect', message: err.toString() });
 }
 
 const redisClientSession = createClient({
-  url: 'redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092',
+  url: app.locals.url,
   username: 'sss',
   password: [password],
   legacyMode: true,
 });
 
+let redisStore;
 try {
   await redisClientSession.connect();
+  redisStore = await new RedisStore({ client: redisClientSession });
 } catch (err) {
-  console.log('xxx redisClientSession.connect', err.toString());
+  logger.error({ function: 'redisClientSession.connect', message: err.toString() });
 }
-
-const redisStore = new RedisStore({ client: redisClientSession });
 
 const sessionOptions = {
   store: redisStore,
@@ -59,16 +107,25 @@ if (app.get('env') === 'production') {
 }
 
 if (sessionOptions.secret) {
-  console.log('xxx use session');
   app.use(session(sessionOptions));
 }
 
-// Access the session as req.session
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
 app.get('/', (req, res) => {
-  req.session.shane = 'req.sessionID';
+  req.session.shane = req.sessionID;
   redisStore.get(req.sessionID, (error, sess) => { res.send(`${req.sessionID} xxx ${JSON.stringify(sess)}`); });
 });
 
+app.post('/login', (req, res) => {
+  app.locals.url = req.body.url;
+  app.locals.user = req.body.user;
+  app.locals.password = req.body.password;
+  res.send('xxx out');
+});
+
 app.listen(port, () => {
-  console.log('Node.js HTTP server listening', import.meta.url, port);
+  logger.info({ message: 'Node.js HTTP server listening', script: import.meta.url, port });
 });
