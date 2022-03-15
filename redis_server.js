@@ -60,9 +60,9 @@ app.use(express.static('docs'));
 app.use(express.urlencoded({ extended: false }));
 
 const redisClientSecret = createClient({
-  url: 'redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092',
-  username: 'sss',
-  password: [password],
+  url: process.env.URL,
+  username: process.env.USERNAME,
+  password: process.env.PASSWORD,
 });
 
 let sessSecret;
@@ -77,53 +77,57 @@ try {
   logger.error({ function: 'redisClientSecret.connect', message: err.toString() });
 }
 
-const redisClientSession = createClient({
-  url: app.locals.url,
-  username: 'sss',
-  password: [password],
-  legacyMode: true,
-});
-
 let redisStore;
-try {
-  await redisClientSession.connect();
-  redisStore = await new RedisStore({ client: redisClientSession });
-} catch (err) {
-  logger.error({ function: 'redisClientSession.connect', message: err.toString() });
-}
-
-const sessionOptions = {
-  store: redisStore,
-  resave: false, // don't save session if unmodified
-  saveUninitialized: false, // don't create session until something stored
-  secret: sessSecret,
-  cookie: {},
-  name: 'sessionId',
-};
-
-if (app.get('env') === 'production') {
-  app.set('trust proxy', 1); // trust first proxy
-  sessionOptions.cookie.secure = true; // serve secure cookies
-}
-
-if (sessionOptions.secret) {
-  app.use(session(sessionOptions));
-}
 
 app.get('/login', (req, res) => {
   res.render('login');
 });
 
-app.get('/', (req, res) => {
-  req.session.shane = req.sessionID;
-  redisStore.get(req.sessionID, (error, sess) => { res.send(`${req.sessionID} xxx ${JSON.stringify(sess)}`); });
+logger.info({ message: 'populating redisClientSession', url: app.locals.url });
+const redisClientSession = createClient({
+  url: process.env.URL,
+  username: process.env.USERNAME,
+  password: process.env.PASSWORD,
+  legacyMode: true,
 });
 
-app.post('/login', (req, res) => {
-  app.locals.url = req.body.url;
-  app.locals.user = req.body.user;
-  app.locals.password = req.body.password;
-  res.send('xxx out');
+try {
+  await redisClientSession.connect();
+
+  redisStore = new RedisStore({ client: redisClientSession });
+  const sessionOptions = {
+    store: redisStore,
+    resave: false, // don't save session if unmodified
+    saveUninitialized: false, // don't create session until something stored
+    secret: sessSecret,
+    cookie: {},
+    name: 'sessionId',
+  };
+
+  if (app.get('env') === 'production') {
+    app.set('trust proxy', 1); // trust first proxy
+    sessionOptions.cookie.secure = true; // serve secure cookies
+  }
+
+  if (sessionOptions.secret) {
+    app.use(session(sessionOptions));
+  }
+} catch (err) {
+  logger.error({ function: 'redisClientSession.connect', message: err.toString() });
+}
+
+app.get('/', (req, res) => {
+  if (req.sessionID) {
+    logger.info({ message: 'session id detected', sessionID: req.sessionID });
+    req.session.shane = req.sessionID;
+    redisStore.get(req.sessionID, (error, sess) => {
+      if (error) { res.send(`failed to get session : ${error}`); } else {
+        res.send(`${req.sessionID} xxx ${JSON.stringify(sess)}`);
+      }
+    });
+  } else {
+    res.send(app.locals.url);
+  }
 });
 
 app.listen(port, () => {
