@@ -1,9 +1,8 @@
-import express from 'express';
-import path from 'path';
-import session from 'express-session';
-import redis from 'connect-redis';
 import helmet from 'helmet';
+import express from 'express';
+import session from 'express-session';
 import { createClient } from 'redis';
+import redis from 'connect-redis';
 import { createLogger, format, transports } from 'winston';
 
 const app = express();
@@ -46,109 +45,90 @@ if (process.env.NODE_ENV !== 'production') {
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
-      connectSrc: [
-        'https://www.dropbox.com/oauth2/authorize',
-        'https://api.dropboxapi.com/oauth2/token',
-        'https://content.dropboxapi.com/2/files/upload',
-      ],
       scriptSrc: [
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
       ],
     },
   }),
 );
-
 app.use(express.static('docs'));
 app.use(express.urlencoded({ extended: false }));
 
-// const useRedisSession = async () => {
-const redisClient = createClient({
-  url: app.locals.url,
-  username: app.locals.user,
-  password: app.locals.password,
+logger.info({ message: 'populating sessionClient', url: process.env.URL });
+const sessionClient = createClient({
+  url: process.env.URL,
+  username: process.env.USERNAME,
+  password: process.env.PASSWORD,
   legacyMode: true,
 });
 
-const sessionOptions = {
-  store: new RedisStore({ client: redisClient }),
-  resave: false, // don't save session if unmodified
-  saveUninitialized: false, // don't create session until something stored
-  secret: app.locals.sessSecret,
-  cookie: {},
-  name: 'sessionId',
-};
+let redisStore;
+try {
+  await sessionClient.connect();
 
-if (app.get('env') === 'production') {
-  app.set('trust proxy', 1); // trust first proxy
-  sessionOptions.cookie.secure = true; // serve secure cookies
-}
+  redisStore = new RedisStore({ client: sessionClient });
+  const sessionOptions = {
+    store: redisStore,
+    resave: false, // don't save session if unmodified
+    saveUninitialized: false, // don't create session until something stored
+    secret: process.env.SESSION_SECRET,
+    cookie: {},
+    name: 'sessionId',
+  };
 
-logger.info({ message: 'sessionOptions.secret', secret: sessionOptions.secret });
-if (sessionOptions.secret) {
-  logger.info({ message: 'use session' });
-  app.use(session(sessionOptions));
-}
-// };
-
-app.get('/', (req, res) => {
-  logger.info({ message: 'home', id: req.sessionId });
-  if (app.locals.user) {
-    res.sendFile(path.resolve('docs/dashboard/dashboard.html'));
-  } else {
-    res.render('login');
+  if (app.get('env') === 'production') {
+    app.set('trust proxy', 1); // trust first proxy
+    sessionOptions.cookie.secure = true; // serve secure cookies
   }
-});
+
+  if (sessionOptions.secret) {
+    app.use(session(sessionOptions));
+  }
+} catch (err) {
+  logger.error({ function: 'sessionClient.connect', message: err.toString() });
+}
 
 app.get('/login', (req, res) => {
   res.render('login');
 });
 
 app.post('/login', (req, res) => {
+  logger.info('logging in');
   const loginRedis = async () => {
-    const client = createClient({
+    const userClient = createClient({
       url: req.body.url,
       username: req.body.user,
       password: req.body.password,
     });
+    logger.info({ message: 'url', url: req.body.url });
+    logger.info({ message: 'user', user: req.body.user });
+    logger.info({ message: 'password', password: req.body.password });
     try {
-      await client.connect();
-      app.locals.sessSecret = await client.get('sessSecret');
-      if (app.locals.sessSecret === null) {
-        app.locals.sessSecret = (Math.random() + 1).toString(36).substring(2);
-        client.set('sessSecret', app.locals.sessSecret);
-      }
-      app.locals.url = req.body.url;
-      app.locals.user = req.body.user;
-      app.locals.password = req.body.password;
-      // await useRedisSession();
+      logger.info({ message: 'connecting' });
+      await userClient.connect();
+      await userClient.get('test');
+      req.session.user = req.body.user;
       res.redirect('/');
     } catch (err) {
-      logger.error({ message: err.toString(), function: 'redis client.connect' });
-      res.render('login', { text: 'Message from: ', message: err.toString(), from: req.body.url });
+      logger.error({ message: err.toString(), function: 'client.connect()' });
+      res.render('login', { text: 'Message from ', from: req.body.url, message: err.toString() });
     }
   };
   loginRedis();
 });
 
-const restrict = (req, res, next) => {
-  if (app.locals.user) {
-    next();
+app.get('/', (req, res) => {
+  if (req.sessionID) {
+    logger.info({ message: 'session id detected', sessionID: req.sessionID });
+    if (req.session.shane) { req.session.shane += 1; } else { req.session.shane = 1; }
+    redisStore.get(req.sessionID, (error, sess) => {
+      if (error) { res.send(`failed to get session : ${error}`); } else {
+        res.send(`${req.sessionID} xxx ${JSON.stringify(sess)}`);
+      }
+    });
   } else {
-    res.redirect('/login');
+    res.send('no session');
   }
-};
-
-app.get('/restricted', restrict, (req, res) => {
-  res.send('Wahoo! restricted area, click to <a href="/logout">logout</a>');
-});
-
-app.get('/logout', (req, res) => {
-  // destroy the user's session to log them out
-  // will be re-created next request
-  logger.info({ message: 'logging out', user: app.locals.user });
-  req.session.destroy(() => {
-    res.redirect('/');
-  });
 });
 
 app.listen(port, () => {
