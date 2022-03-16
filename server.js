@@ -116,6 +116,17 @@ app.post('/login', (req, res) => {
   loginRedis(req, res);
 });
 
+app.get('/logout', (req, res) => {
+  // destroy the user's session to log them out
+  // will be re-created next request
+  // req.session.destroy((err) => {
+  logger.info({ message: 'logging out' });
+  // if (err) logger.error({ message: 'logging out error', err });
+  delete req.session.user;
+  res.redirect('/login');
+  // });
+});
+
 const restrict = (req, res, next) => {
   if (req.session.user) {
     next();
