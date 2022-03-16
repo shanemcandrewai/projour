@@ -59,47 +59,24 @@ app.use(
 app.use(express.static('docs'));
 app.use(express.urlencoded({ extended: false }));
 
-const redisClientSecret = createClient({
-  url: process.env.URL,
-  username: process.env.USERNAME,
-  password: process.env.PASSWORD,
-});
-
-let sessSecret;
-try {
-  await redisClientSecret.connect();
-  sessSecret = await redisClientSecret.get('sessSecret');
-  if (!sessSecret) {
-    sessSecret = (Math.random() + 1).toString(36).substring(2);
-    await redisClientSecret.set('sessSecret', sessSecret);
-  }
-} catch (err) {
-  logger.error({ function: 'redisClientSecret.connect', message: err.toString() });
-}
-
-let redisStore;
-
-app.get('/login', (req, res) => {
-  res.render('login');
-});
-
-logger.info({ message: 'populating redisClientSession', url: app.locals.url });
-const redisClientSession = createClient({
+logger.info({ message: 'populating sessionClient', url: process.env.URL });
+const sessionClient = createClient({
   url: process.env.URL,
   username: process.env.USERNAME,
   password: process.env.PASSWORD,
   legacyMode: true,
 });
 
+let redisStore;
 try {
-  await redisClientSession.connect();
+  await sessionClient.connect();
 
-  redisStore = new RedisStore({ client: redisClientSession });
+  redisStore = new RedisStore({ client: sessionClient });
   const sessionOptions = {
     store: redisStore,
     resave: false, // don't save session if unmodified
     saveUninitialized: false, // don't create session until something stored
-    secret: sessSecret,
+    secret: process.env.SESSION_SECRET,
     cookie: {},
     name: 'sessionId',
   };
@@ -113,20 +90,48 @@ try {
     app.use(session(sessionOptions));
   }
 } catch (err) {
-  logger.error({ function: 'redisClientSession.connect', message: err.toString() });
+  logger.error({ function: 'sessionClient.connect', message: err.toString() });
 }
+
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+app.post('/login', (req, res) => {
+  logger.info('logging in');
+  const loginRedis = async () => {
+    const userClient = createClient({
+      url: req.body.url,
+      username: req.body.user,
+      password: req.body.password,
+    });
+    logger.info({ message: 'url', url: userClient.url });
+    logger.info({ message: 'user', user: userClient.user });
+    logger.info({ message: 'password', password: userClient.password });    
+    try {
+      await userClient.connect();
+      req.session.user = req.body.user;
+      logger.info({ message: 'sucessfully logged in', user: req.session.user });
+      res.redirect('/');
+    } catch (err) {
+      logger.error({ message: err.toString(), function: 'client.connect()' });
+      res.render('login', { text: 'Message from ', from: 'req.body.url', message: err.toString() });
+    }
+  };
+  loginRedis();
+});
 
 app.get('/', (req, res) => {
   if (req.sessionID) {
     logger.info({ message: 'session id detected', sessionID: req.sessionID });
-    req.session.shane = req.sessionID;
+    if (req.session.shane) { req.session.shane += 1; } else { req.session.shane = 1; }
     redisStore.get(req.sessionID, (error, sess) => {
       if (error) { res.send(`failed to get session : ${error}`); } else {
         res.send(`${req.sessionID} xxx ${JSON.stringify(sess)}`);
       }
     });
   } else {
-    res.send(app.locals.url);
+    res.send('no session');
   }
 });
 

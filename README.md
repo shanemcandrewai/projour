@@ -1,22 +1,16 @@
-# ProJour
+# ProJour : Project journaling
 
-Project journaling
-
-### Components
-
-#### Server side framework
-
-Express / Node
-
-### Future plans
-
+## Components
+### Web server framework
+[Express](https://expressjs.com/) / [Node.js](https://nodejs.org/)
 #### Authentication
-
 [express-session / connect-redis](https://github.com/expressjs/session#compatible-session-stores)
+#### Data store
+[Redis Cloud](https://app.redislabs.com/)
+### Front end toolkit
+Bootstrap
 
-#### Front end symmetric encryption
 
-[crypto-js](https://github.com/brix/crypto-js)
 
 ## Installation
 
@@ -27,7 +21,8 @@ Express / Node
 ### Development tools
 
 #### [Express](https://expressjs.com/en/starter/installing.html)
-
+##### Style guide
+[Airbnb](https://github.com/airbnb/javascript)
 ##### [Create a package.json file](https://docs.npmjs.com/cli/v6/commands/npm-init)
 
     npm init -y
@@ -38,7 +33,7 @@ Express / Node
 
 ##### [Local test](https://nodejs.org/en/docs/guides/getting-started-guide/)
 
-    node app.js
+    URL=redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092 SESSION_SECRET=[session secret] USERNAME=[user] PASSWORD=[password] node .
 
 [Local URL](http://localhost:3000)
 
@@ -115,3 +110,11 @@ change privacy_file_unique_origin to false in about:config
     git push heroku master
 ##### [App URL](https://dashboard.heroku.com/apps/projour/settings)
     https://projour.herokuapp.com/
+
+### Future plans
+
+
+
+#### Front end symmetric encryption
+
+[crypto-js](https://github.com/brix/crypto-js)
