@@ -92,35 +92,43 @@ app.get('/login', (req, res) => {
   res.render('login');
 });
 
+const loginRedis = async (req, res) => {
+  logger.info('logging in');
+  const userClient = createClient({
+    url: req.body.url,
+    username: req.body.user,
+    password: req.body.password,
+  });
+  try {
+    logger.info({ message: 'connecting' });
+    await userClient.connect();
+    await userClient.get('test');
+    req.session.user = req.body.user;
+    res.redirect('/');
+  } catch (err) {
+    logger.error({ message: err.toString(), function: 'client.connect()' });
+    res.render('login', { from: req.body.url, message: err.toString() });
+  }
+};
+
 app.post('/login', (req, res) => {
   logger.info('logging in');
-  const loginRedis = async () => {
-    const userClient = createClient({
-      url: req.body.url,
-      username: req.body.user,
-      password: req.body.password,
-    });
-    logger.info({ message: 'url', url: req.body.url });
-    logger.info({ message: 'user', user: req.body.user });
-    logger.info({ message: 'password', password: req.body.password });
-    try {
-      logger.info({ message: 'connecting' });
-      await userClient.connect();
-      await userClient.get('test');
-      req.session.user = req.body.user;
-      res.redirect('/');
-    } catch (err) {
-      logger.error({ message: err.toString(), function: 'client.connect()' });
-      res.render('login', { from: req.body.url, message: err.toString() });
-    }
-  };
-  loginRedis();
+  loginRedis(req, res);
 });
 
-app.get('/', (req, res) => {
+const restrict = (req, res, next) => {
+  if (req.session.user) {
+    next();
+  } else {
+    logger.error({ message: 'not logged in' });
+    res.render('login', { from: 'Please log in' });
+  }
+};
+
+app.get('/', restrict, (req, res) => {
   if (req.sessionID) {
     logger.info({ message: 'session id detected', sessionID: req.sessionID });
-    if (req.session.shane) { req.session.shane += 1; } else { req.session.shane = 1; }
+    if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
     redisStore.get(req.sessionID, (error, sess) => {
       if (error) { res.send(`failed to get session : ${error}`); } else {
         res.send(`${req.sessionID} xxx ${JSON.stringify(sess)}`);
