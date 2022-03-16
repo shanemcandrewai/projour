@@ -111,7 +111,7 @@ app.post('/login', (req, res) => {
       res.redirect('/');
     } catch (err) {
       logger.error({ message: err.toString(), function: 'client.connect()' });
-      res.render('login', { text: 'Message from ', from: req.body.url, message: err.toString() });
+      res.render('login', { from: req.body.url, message: err.toString() });
     }
   };
   loginRedis();
