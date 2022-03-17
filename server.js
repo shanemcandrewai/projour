@@ -128,9 +128,8 @@ const restrict = (req, res, next) => {
   if (req.session.user) {
     next();
   } else {
-    logger.warn({ message: 'restrict', session: req.session });
-    // res.render('login', { from: 'Please log in' });
-    res.locals.from = 'Please log in';
+    res.app.locals.from = 'Please log in';
+    delete res.app.locals.message;
     res.redirect('/login');
   }
 };
