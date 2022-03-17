@@ -100,16 +100,12 @@ const loginRedis = async (req, res) => {
     password: req.body.password,
   });
   try {
-    logger.warn('connecting');
     await userClient.connect();
-    logger.warn('connected');
-    await userClient.get('test');
-    logger.warn('connection test');
     req.session.user = req.body.user;
-    req.session.save((err) => {
+    logger.warn({ message: 'loginRedis', user: req.session });
+    await req.session.save((err) => {
       if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
     });
-    logger.warn({ message: 'loginRedis', user: req.session });
     res.redirect('/');
   } catch (err) {
     logger.error({ message: err.toString(), function: 'loginRedis' });
@@ -117,13 +113,10 @@ const loginRedis = async (req, res) => {
   }
 };
 
-app.post('/login', (req, res) => {
-  logger.info('logging in');
-  loginRedis(req, res);
+app.post('/login', loginRedis, () => {
 });
 
 app.get('/logout', (req, res) => {
-  logger.warn({ message: 'logging out', session: req.session });
   delete req.session.user;
   res.redirect('/login');
 });
@@ -133,14 +126,12 @@ const restrict = (req, res, next) => {
     next();
   } else {
     logger.warn({ message: 'restrict', session: req.session });
-    logger.info({ message: 'not logged in' });
     res.render('login', { from: 'Please log in' });
   }
 };
 
 app.get('/', restrict, (req, res) => {
   if (req.sessionID) {
-    logger.info({ message: 'session id detected', sessionID: req.sessionID });
     if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
     redisStore.get(req.sessionID, (error, sess) => {
       if (error) { res.send(`failed to get session : ${error}`); } else {
