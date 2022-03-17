@@ -85,7 +85,7 @@ try {
     app.use(session(sessionOptions));
   }
 } catch (err) {
-  logger.error({ function: 'sessionClient.connect', message: err.toString() });
+  logger.info({ function: 'sessionClient.connect', message: err.toString() });
 }
 
 app.get('/login', (req, res) => {
@@ -100,13 +100,19 @@ const loginRedis = async (req, res) => {
     password: req.body.password,
   });
   try {
-    logger.info({ message: 'connecting' });
+    logger.warn('connecting');
     await userClient.connect();
+    logger.warn('connected');
     await userClient.get('test');
+    logger.warn('connection test');
     req.session.user = req.body.user;
+    req.session.save((err) => {
+      if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
+    });
+    logger.warn({ message: 'loginRedis', user: req.session });
     res.redirect('/');
   } catch (err) {
-    logger.error({ message: err.toString(), function: 'client.connect()' });
+    logger.error({ message: err.toString(), function: 'loginRedis' });
     res.render('login', { from: req.body.url, message: err.toString() });
   }
 };
@@ -117,21 +123,17 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-  // destroy the user's session to log them out
-  // will be re-created next request
-  // req.session.destroy((err) => {
-  logger.info({ message: 'logging out' });
-  // if (err) logger.error({ message: 'logging out error', err });
+  logger.warn({ message: 'logging out', session: req.session });
   delete req.session.user;
   res.redirect('/login');
-  // });
 });
 
 const restrict = (req, res, next) => {
   if (req.session.user) {
     next();
   } else {
-    logger.error({ message: 'not logged in' });
+    logger.warn({ message: 'restrict', session: req.session });
+    logger.info({ message: 'not logged in' });
     res.render('login', { from: 'Please log in' });
   }
 };
@@ -142,7 +144,7 @@ app.get('/', restrict, (req, res) => {
     if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
     redisStore.get(req.sessionID, (error, sess) => {
       if (error) { res.send(`failed to get session : ${error}`); } else {
-        res.send(`${req.sessionID} xxx ${JSON.stringify(sess)}`);
+        res.send(`${req.sessionID} xxx ${JSON.stringify(sess)} <a href="/logout">logout</a>`);
       }
     });
   } else {

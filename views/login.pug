@@ -14,7 +14,8 @@ html(lang="en")
   body.text-center
     main.form-login
       form
-        img.mb-4(src="/images/eye-clipart.svg", alt="eye")
+        a(href="/") 
+          img.mb-4(src="/images/eye-clipart.svg", alt="ProJour home")
         h1.h3.mb-3.fw-normal Please log in
         .form-floating
           input#floatingUrl.form-control(
@@ -35,6 +36,6 @@ html(lang="en")
           formmethod="post"
         )
           | Log in
-    p      
-    p #{ from } 
+    p 
+    p #{ from }
     p #{ message }
