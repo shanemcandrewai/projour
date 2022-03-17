@@ -1,37 +1,17 @@
 {
-  "name": "projour",
-  "type": "module",
+  "name": "auth",
   "version": "1.0.0",
-  "description": "Project journaling",
-  "main": "server.js",
+  "description": "Express auth example",
+  "main": "auth.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shanemcandrewai/projour.git"
-  },
   "keywords": [],
-  "author": "Shane McAndrew",
-  "license": "",
-  "bugs": {
-    "url": "https://github.com/shanemcandrewai/projour/issues"
-  },
-  "homepage": "https://github.com/shanemcandrewai/projour#readme",
+  "homepage": "https://github.com/expressjs/express/tree/master/examples/auth",
   "dependencies": {
-    "connect-redis": "^6.1.2",
+    "ejs": "^3.1.6",
     "express": "^4.17.2",
     "express-session": "^1.17.2",
-    "helmet": "^5.0.2",
-    "pug": "^3.0.2",
-    "redis": "^4.0.4",
-    "winston": "^3.6.0"
-  },
-  "devDependencies": {
-    "@prettier/plugin-pug": "^1.19.2",
-    "eslint": "^8.9.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.25.4",
-    "prettier": "^2.5.1"
+    "pbkdf2-password": "^1.2.1"
   }
 }
