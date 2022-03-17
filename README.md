@@ -4,11 +4,11 @@
 ### Web server framework
 [Express](https://expressjs.com/) / [Node.js](https://nodejs.org/)
 #### Authentication
-[express-session / connect-redis](https://github.com/expressjs/session#compatible-session-stores)
+[express-session](https://github.com/expressjs/session) with [connect-redis](https://github.com/tj/connect-redis)
 #### Data store
 [Redis Cloud](https://app.redislabs.com/)
 ### Front end toolkit
-Bootstrap
+[Bootstrap](https://getbootstrap.com/)
 
 
 
@@ -33,7 +33,7 @@ Bootstrap
 
 ##### [Local test](https://nodejs.org/en/docs/guides/getting-started-guide/)
 
-    URL=redis://redis-11092.c250.eu-central-1-1.ec2.cloud.redislabs.com:11092 SESSION_SECRET=[session secret] USERNAME=[user] PASSWORD=[password] node .
+    URL=redis://[url] SESSION_SECRET=[session secret] USERNAME=[user] PASSWORD=[password] node .
 
 [Local URL](http://localhost:3000)
 
@@ -48,7 +48,7 @@ Bootstrap
 
 ##### run ESLint on any file or directory
 
-    npx eslint app.js
+    npx eslint server.js
 
 
 ##### [Publish on GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
