@@ -1,16 +1,36 @@
 # ProJour : Project journaling
 
-## Components
+## Prerequisites
+
+Redis account, such as [Redis Cloud](https://redis.com/try-free/)
+
+## Live demo
+
+https://projour.herokuapp.com/
+
+## Component technologies
+
 ### Web server framework
-[Express](https://expressjs.com/) / [Node.js](https://nodejs.org/)
-#### Authentication
+
+[Node.js](https://nodejs.org/) with [Express](https://expressjs.com/)
+
+#### Authentication middleware
+
 [express-session](https://github.com/expressjs/session) with [connect-redis](https://github.com/tj/connect-redis)
+
 #### Data store
+
 [Redis Cloud](https://app.redislabs.com/)
+
+#### Template engine
+
+[Pug](https://github.com/pugjs/pug/tree/master/packages/pug)
+
+[Redis Cloud](https://app.redislabs.com/)
+
 ### Front end toolkit
+
 [Bootstrap](https://getbootstrap.com/)
-
-
 
 ## Installation
 
@@ -21,8 +41,11 @@
 ### Development tools
 
 #### [Express](https://expressjs.com/en/starter/installing.html)
+
 ##### Style guide
+
 [Airbnb](https://github.com/airbnb/javascript)
+
 ##### [Create a package.json file](https://docs.npmjs.com/cli/v6/commands/npm-init)
 
     npm init -y
@@ -37,7 +60,6 @@
 
 [Local URL](http://localhost:3000)
 
-
 #### [ESLint](https://eslint.org/docs/user-guide/getting-started)
 
     npm install eslint --save-dev
@@ -49,7 +71,6 @@
 ##### run ESLint on any file or directory
 
     npx eslint server.js
-
 
 ##### [Publish on GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 
@@ -88,32 +109,46 @@ change privacy_file_unique_origin to false in about:config
     git checkout v1.4.12
 
 ### [Heroku](https://projour.herokuapp.com)
+
 #### [Installation](https://devcenter.heroku.com/articles/heroku-cli#install-the-heroku-cli)
+
 [Windows 64 bit installer](https://cli-assets.heroku.com/heroku-x64.exe)
+
 #### [Local testing](https://devcenter.heroku.com/articles/heroku-local)
+
     heroku local
+
 #### [Verify remote repository is tracked](https://git-scm.com/docs/git-remote)
+
     git remote -v
+
 #### app checks
+
 - must be named `server.js` for `npm start`
 - include `process.env.PORT` in `const port = process.env.PORT || 3000`;
+
 ##### Expected output
+
     heroku	https://git.heroku.com/projour.git (fetch)
     heroku	https://git.heroku.com/projour.git (push)
     origin	https://github.com/shanemcandrewai/projour.git (fetch)
     origin	https://github.com/shanemcandrewai/projour.git (push)
+
 ###### [If heroku missing, add remote to local repository](https://devcenter.heroku.com/articles/git#creating-a-heroku-remote)
+
     heroku create
     heroku login -i
     heroku git:remote -a projour
+
 ##### [Deploy code](https://devcenter.heroku.com/articles/git#deploying-code)
+
     git push heroku master
+
 ##### [App URL](https://dashboard.heroku.com/apps/projour/settings)
+
     https://projour.herokuapp.com/
 
 ### Future plans
-
-
 
 #### Front end symmetric encryption
 

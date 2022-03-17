@@ -27,10 +27,8 @@ const logger = createLogger({
   ],
 });
 
-//
 // If we're not in production then **ALSO** log to the `console`
 // with the colorized simple format.
-//
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new transports.Console({
     format: format.combine(
@@ -47,6 +45,7 @@ app.use(
     directives: {
       scriptSrc: [
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
+        'http://localhost:3000/javascripts/tree.js',
       ],
     },
   }),
@@ -54,7 +53,7 @@ app.use(
 app.use(express.static('docs'));
 app.use(express.urlencoded({ extended: false }));
 
-logger.info({ message: 'populating sessionClient', url: process.env.URL });
+// Initialise session
 const sessionClient = createClient({
   url: process.env.URL,
   username: process.env.USERNAME,
@@ -85,15 +84,14 @@ try {
     app.use(session(sessionOptions));
   }
 } catch (err) {
-  logger.info({ function: 'sessionClient.connect', message: err.toString() });
+  logger.error({ function: 'sessionClient.connect', message: err.toString() });
 }
 
 app.get('/login', (req, res) => {
-  res.render('login');
+  res.render('login', { from: res.app.locals.from, message: res.app.locals.message });
 });
 
-const loginRedis = async (req, res) => {
-  logger.info('logging in');
+const loginRedis = async (req, res, next) => {
   const userClient = createClient({
     url: req.body.url,
     username: req.body.user,
@@ -101,19 +99,24 @@ const loginRedis = async (req, res) => {
   });
   try {
     await userClient.connect();
+    await userClient.set('testKey', 'testValue');
     req.session.user = req.body.user;
-    logger.warn({ message: 'loginRedis', user: req.session });
     await req.session.save((err) => {
       if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
     });
-    res.redirect('/');
+    delete res.app.locals.from;
+    delete res.app.locals.message;
+    next();
   } catch (err) {
     logger.error({ message: err.toString(), function: 'loginRedis' });
-    res.render('login', { from: req.body.url, message: err.toString() });
+    res.app.locals.from = req.body.url;
+    res.app.locals.message = err.toString();
+    res.redirect('/login');
   }
 };
 
-app.post('/login', loginRedis, () => {
+app.post('/login', loginRedis, (req, res) => {
+  res.redirect('/');
 });
 
 app.get('/logout', (req, res) => {
@@ -126,7 +129,9 @@ const restrict = (req, res, next) => {
     next();
   } else {
     logger.warn({ message: 'restrict', session: req.session });
-    res.render('login', { from: 'Please log in' });
+    // res.render('login', { from: 'Please log in' });
+    res.locals.from = 'Please log in';
+    res.redirect('/login');
   }
 };
 
