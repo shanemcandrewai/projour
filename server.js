@@ -43,7 +43,7 @@ if (process.env.NODE_ENV !== 'production') {
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
-      scriptSrc: ["'self'",  (req, res) => 'nonce-fsda44r@dasfnd0mx',
+      scriptSrc: ["'self'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
     },
   }),
