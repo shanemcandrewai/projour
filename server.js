@@ -43,10 +43,8 @@ if (process.env.NODE_ENV !== 'production') {
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
-      scriptSrc: [
-        'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
-        'http://localhost:3000/javascripts/tree.js',
-      ],
+      scriptSrc: ["'self'",  (req, res) => 'nonce-fsda44r@dasfnd0mx',
+        'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
     },
   }),
 );
@@ -88,10 +86,11 @@ try {
 }
 
 app.get('/login', (req, res) => {
-  res.render('login', { from: res.app.locals.from, message: res.app.locals.message });
+  res.render('login');
 });
 
 const loginRedis = async (req, res, next) => {
+  logger.warn(JSON.stringify(req.body));
   const userClient = createClient({
     url: req.body.url,
     username: req.body.user,
@@ -104,14 +103,14 @@ const loginRedis = async (req, res, next) => {
     await req.session.save((err) => {
       if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
     });
-    delete res.app.locals.from;
-    delete res.app.locals.message;
+    delete res.locals.from;
+    delete res.locals.message;
     next();
   } catch (err) {
     logger.error({ message: err.toString(), function: 'loginRedis' });
-    res.app.locals.from = req.body.url;
-    res.app.locals.message = err.toString();
-    res.redirect('/login');
+    res.locals.from = req.body.url;
+    res.locals.message = err.toString();
+    res.send(res.locals);
   }
 };
 
@@ -128,9 +127,9 @@ const restrict = (req, res, next) => {
   if (req.session.user) {
     next();
   } else {
-    res.app.locals.from = 'Please log in';
-    delete res.app.locals.message;
-    res.redirect('/login');
+    res.locals.from = 'Please log in';
+    delete res.locals.message;
+    res.send('/login');
   }
 };
 

@@ -11,6 +11,7 @@ html(lang="en")
       crossorigin="anonymous"
     )
     link(href="/stylesheets/login.css", rel="stylesheet")
+    script(src='/javascripts/login.js' defer='')
   body.text-center
     main.form-login
       form
@@ -30,12 +31,12 @@ html(lang="en")
         .form-floating
           input#floatingPassword.form-control(name="password", type="password")
           label(for="floatingPassword") Password
-        button.w-100.btn.btn-lg.btn-primary(
+        button#login.w-100.btn.btn-lg.btn-primary(
           type="submit",
           formaction="/login",
           formmethod="post"
         )
           | Log in
-    p 
-    p #{ from }
-    p #{ message }
+    p
+    p#from
+    p#message
