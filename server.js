@@ -45,11 +45,12 @@ app.use(
     directives: {
       scriptSrc: ["'self'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
+      connectSrc: ['https://httpbin.org/post'],
     },
   }),
 );
 app.use(express.static('docs'));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 // Initialise session
 const sessionClient = createClient({
@@ -89,8 +90,8 @@ app.get('/login', (req, res) => {
   res.render('login');
 });
 
-const loginRedis = async (req, res, next) => {
-  logger.warn(JSON.stringify(req.body));
+const loginRedis = async (req, res) => {
+  logger.warn('req.body');
   const userClient = createClient({
     url: req.body.url,
     username: req.body.user,
@@ -105,17 +106,16 @@ const loginRedis = async (req, res, next) => {
     });
     delete res.locals.from;
     delete res.locals.message;
-    next();
   } catch (err) {
     logger.error({ message: err.toString(), function: 'loginRedis' });
     res.locals.from = req.body.url;
     res.locals.message = err.toString();
-    res.send(res.locals);
   }
+  return JSON.stringify(res.locals);
 };
 
-app.post('/login', loginRedis, (req, res) => {
-  res.redirect('/');
+app.post('/login', loginRedis, () => {
+  // res.redirect('/');
 });
 
 app.get('/logout', (req, res) => {
