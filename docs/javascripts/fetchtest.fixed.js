@@ -40,4 +40,4 @@ const fetchAsyncDefault = async (
 };
 
 document.getElementById('fetchAsync').addEventListener('click', fetchAsync);
-document.getElementById('fetchAsyncDefault').addEventListener('click', fetchAsyncDefault);
+document.getElementById('fetchAsyncDefault').addEventListener('click', () => fetchAsyncDefault());
