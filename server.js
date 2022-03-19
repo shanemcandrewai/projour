@@ -45,7 +45,7 @@ app.use(
     directives: {
       scriptSrc: ["'self'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
-      connectSrc: ['http://localhost:3000/login', 'https://httpbin.org/post'],
+      connectSrc: ['http://localhost:3000/login'],
     },
   }),
 );
@@ -87,6 +87,7 @@ try {
 }
 
 app.get('/login', (req, res) => {
+  logger.warn({ message: 'login', from: req.session.from });
   res.render('login', { from: req.session.from });
 });
 
@@ -104,17 +105,17 @@ const loginRedis = async (req, res, next) => {
     await req.session.save((err) => {
       if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
     });
-    delete res.session.from;
-    delete res.session.message;
+    delete req.session.from;
+    delete req.session.message;
   } catch (err) {
     logger.error({ message: err.toString(), function: 'loginRedis' });
-    res.session.from = req.body.url;
-    res.session.message = err.toString();
+    req.session.from = req.body.url;
+    req.session.message = err.toString();
   }
   next();
 };
 
-app.post('/login', loginRedis, (res) => JSON.stringify(res.session));
+app.post('/login', loginRedis, (req) => JSON.stringify(req.session));
 
 app.get('/logout', (req, res) => {
   delete req.session.user;
