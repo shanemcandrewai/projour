@@ -45,7 +45,7 @@ app.use(
     directives: {
       scriptSrc: ["'self'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
-      connectSrc: ['https://httpbin.org/post'],
+      connectSrc: ['http://localhost:3000/login', 'https://httpbin.org/post'],
     },
   }),
 );
@@ -87,10 +87,10 @@ try {
 }
 
 app.get('/login', (req, res) => {
-  res.render('login');
+  res.render('login', { from: req.session.from });
 });
 
-const loginRedis = async (req, res) => {
+const loginRedis = async (req, res, next) => {
   logger.warn('req.body');
   const userClient = createClient({
     url: req.body.url,
@@ -99,24 +99,22 @@ const loginRedis = async (req, res) => {
   });
   try {
     await userClient.connect();
-    await userClient.set('testKey', 'testValue');
+    // await userClient.set('testKey', 'testValue');
     req.session.user = req.body.user;
     await req.session.save((err) => {
       if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
     });
-    delete res.locals.from;
-    delete res.locals.message;
+    delete res.session.from;
+    delete res.session.message;
   } catch (err) {
     logger.error({ message: err.toString(), function: 'loginRedis' });
-    res.locals.from = req.body.url;
-    res.locals.message = err.toString();
+    res.session.from = req.body.url;
+    res.session.message = err.toString();
   }
-  return JSON.stringify(res.locals);
+  next();
 };
 
-app.post('/login', loginRedis, () => {
-  // res.redirect('/');
-});
+app.post('/login', loginRedis, (res) => JSON.stringify(res.session));
 
 app.get('/logout', (req, res) => {
   delete req.session.user;
@@ -127,9 +125,10 @@ const restrict = (req, res, next) => {
   if (req.session.user) {
     next();
   } else {
-    res.locals.from = 'Please log in';
-    delete res.locals.message;
-    res.send('/login');
+    req.session.from = 'Please log in';
+    delete req.session.message;
+    logger.warn({ message: 'restrict', from: req.session.from });
+    res.redirect('/login');
   }
 };
 
