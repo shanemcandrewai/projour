@@ -3,7 +3,6 @@ const loginPost = async (url = 'login', data = {
   user: document.getElementById('floatingUser').value,
   password: document.getElementById('floatingPassword').value,
 }) => {
-  console.log('xxx');
   document.getElementById('from').innerHTML = document.getElementById('floatingUrl').value;
   try {
     const response = await fetch(url, {
@@ -14,11 +13,10 @@ const loginPost = async (url = 'login', data = {
       body: JSON.stringify(data),
     });
     const ret = await response.json();
-    document.getElementById('message').innerHTML = ret;
+    document.getElementById('message').innerHTML = ret.message;
   } catch (err) {
     document.getElementById('message').innerHTML = err;
   }
 };
 
-console.log('xxx1');
-document.getElementById('login').addEventListener('click', function loginPost());
+document.getElementById('login').addEventListener('click', () => loginPost());

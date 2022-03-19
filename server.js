@@ -88,11 +88,13 @@ try {
 
 app.get('/login', (req, res) => {
   logger.warn({ message: 'login', from: req.session.from });
-  res.render('login', { from: req.session.from });
+  res.render('login', {
+    from: req.session.from,
+  });
 });
 
 const loginRedis = async (req, res, next) => {
-  logger.warn('req.body');
+  logger.warn('xxx');
   const userClient = createClient({
     url: req.body.url,
     username: req.body.user,
@@ -100,7 +102,7 @@ const loginRedis = async (req, res, next) => {
   });
   try {
     await userClient.connect();
-    // await userClient.set('testKey', 'testValue');
+    await userClient.set('testKey', 'testValue');
     req.session.user = req.body.user;
     await req.session.save((err) => {
       if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
@@ -115,9 +117,13 @@ const loginRedis = async (req, res, next) => {
   next();
 };
 
-app.post('/login', loginRedis, (req) => JSON.stringify(req.session));
+app.post('/login', loginRedis, (req, res) => {
+  logger.warn({ message: 'login post', session: req.session });
+  res.json(req.session);
+});
 
 app.get('/logout', (req, res) => {
+  logger.warn('xxxy');
   delete req.session.user;
   res.redirect('/login');
 });
