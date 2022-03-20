@@ -87,9 +87,17 @@ try {
 }
 
 app.get('/login', (req, res) => {
-  logger.warn({ message: 'login', from: req.session.from });
+  logger.warn({ message: 'GET /login', id: req.session.id, session: req.session });
+  if (!req.get('Referer')) {
+    logger.warn('deleting session fields');
+    delete req.session.from;
+    delete req.session.message;
+  } else {
+    logger.warn({ message: 'referer found', referer: req.get('Referer') });
+  }
   res.render('login', {
     from: req.session.from,
+    message: req.session.message,
   });
 });
 
@@ -118,7 +126,7 @@ const loginRedis = async (req, res, next) => {
 };
 
 app.post('/login', loginRedis, (req, res) => {
-  logger.warn({ message: 'login post', session: req.session });
+  logger.warn({ message: 'login post', id: req.session.id, session: req.session });
   res.json(req.session);
 });
 
@@ -128,28 +136,31 @@ app.get('/logout', (req, res) => {
   res.redirect('/login');
 });
 
-const restrict = (req, res, next) => {
-  if (req.session.user) {
+const restrict = async (req, res, next) => {
+  logger.warn({ message: 'login restrict', id: req.session.id, session: req.session });
+  if ('user' in req.session) {
+    logger.warn({ message: 'logged in', id: req.session.id, session: req.session });
     next();
   } else {
-    req.session.from = 'Please log in';
-    delete req.session.message;
-    logger.warn({ message: 'restrict', from: req.session.from });
+    logger.warn({ message: 'not logged in', id: req.session.id, session: req.session });
+    req.session.from = 'ProJour';
+    req.session.message = 'Please log in';
+    await req.session.save((err) => {
+      if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
+    });
+    logger.warn({ message: 'session saved', id: req.session.id, session: req.session });
     res.redirect('/login');
   }
 };
 
 app.get('/', restrict, (req, res) => {
-  if (req.sessionID) {
-    if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
-    redisStore.get(req.sessionID, (error, sess) => {
-      if (error) { res.send(`failed to get session : ${error}`); } else {
-        res.send(`${req.sessionID} xxx ${JSON.stringify(sess)} <a href="/logout">logout</a>`);
-      }
-    });
-  } else {
-    res.send('no session');
-  }
+  logger.warn({ message: 'GET /', id: req.session.id, session: req.session });
+  if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
+  redisStore.get(req.session.id, (error, sess) => {
+    if (error) { res.send(`failed to get session : ${error}`); } else {
+      res.send(`${req.session.id} xxx ${JSON.stringify(sess)} <a href="/logout">logout</a>`);
+    }
+  });
 });
 
 app.listen(port, () => {

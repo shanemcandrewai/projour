@@ -1,11 +1,11 @@
-const loginPost = async (url = 'login', data = {
+const loginPost = async (resource = 'login', data = {
   url: document.getElementById('floatingUrl').value,
   user: document.getElementById('floatingUser').value,
   password: document.getElementById('floatingPassword').value,
 }) => {
   document.getElementById('from').innerHTML = document.getElementById('floatingUrl').value;
   try {
-    const response = await fetch(url, {
+    const response = await fetch(resource, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,4 +19,4 @@ const loginPost = async (url = 'login', data = {
   }
 };
 
-document.getElementById('login').addEventListener('click', () => loginPost());
+document.getElementById('butLogin').addEventListener('click', () => loginPost());

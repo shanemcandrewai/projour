@@ -26,11 +26,13 @@ https://projour.herokuapp.com/
 
 [Pug](https://github.com/pugjs/pug/tree/master/packages/pug)
 
-[Redis Cloud](https://app.redislabs.com/)
-
 ### Front end toolkit
 
 [Bootstrap](https://getbootstrap.com/)
+
+### JavaScript style guide
+
+[Airbnb](https://github.com/airbnb/javascript)
 
 ## Installation
 
@@ -38,27 +40,81 @@ https://projour.herokuapp.com/
 
     npm install
 
-### Development tools
-
-#### [Express](https://expressjs.com/en/starter/installing.html)
-
-##### Style guide
-
-[Airbnb](https://github.com/airbnb/javascript)
-
-##### [Create a package.json file](https://docs.npmjs.com/cli/v6/commands/npm-init)
-
-    npm init -y
-
-##### [Install the package](https://docs.npmjs.com/cli/v6/commands/npm-install)
-
-    npm install express
-
-##### [Local test](https://nodejs.org/en/docs/guides/getting-started-guide/)
+## [Local testing](https://nodejs.org/en/docs/guides/getting-started-guide/)
 
     URL=redis://[url] SESSION_SECRET=[session secret] USERNAME=[user] PASSWORD=[password] node .
 
 [Local URL](http://localhost:3000)
+
+## Login process
+
+### Client GET /login
+
+### Server receives `req.session.id` from cookie or creates a new one.
+
+### Server retrieves `session.from` and `session.message`
+
+- `req.session.from` : ProJour or Redis server
+- `req.session.message` : Login failure reason
+
+### check referer HTTP request header
+
+If missing, this means the user requested the login page directly
+
+- delete `req.session.from`
+- delete `req.session.message` 
+
+### Server renders with `login.pug` with `session.from` and `session.message`
+
+### client downloads and executes code
+
+#### `login` HTML page
+
+##### Text input `floatingUrl`
+
+URL of Redis store
+
+#### `/javascripts/login.js`
+
+Registers `loginPost()` event handler for `butLogin`
+
+### user clicks `butLogin`
+
+### `loginPost()` executed
+
+#### Paragraph element `from` assigned value of `floatingUrl`
+
+#### fetch POST to `resource`
+
+`resource` is `login` be default
+
+##### fetch body
+
+- data.url = `floatingUrl`
+- data.user = `floatinguser`
+- data.password = `floatingpassword`
+
+##### client POST `/login`
+
+###### server executes `loginRedis` middleware
+
+- server connects to `floatingUrl` using `req.body.user` and `req.body.password`
+- if the connection succeeds `req.session.user` is assigned the value of `req.body.user` and `req.session.from` and `req.session.message` are deleted
+- if the connection fails, `req.session.from` is assigned the value `req.body.url` and `req.session.message` is asssigned the error message from `redisClient`
+
+###### `req.session` is returned to client
+
+## Package and development tools installation
+
+### [Express](https://expressjs.com/en/starter/installing.html)
+
+#### [Create a package.json file](https://docs.npmjs.com/cli/v6/commands/npm-init)
+
+    npm init -y
+
+#### [Install the package](https://docs.npmjs.com/cli/v6/commands/npm-install)
+
+    npm install express
 
 #### [ESLint](https://eslint.org/docs/user-guide/getting-started)
 
@@ -124,7 +180,7 @@ change privacy_file_unique_origin to false in about:config
 
 #### app checks
 
-- must be named `server.js` for `npm start`
+- must be named `server.js` to enable `npm start`
 - include `process.env.PORT` in `const port = process.env.PORT || 3000`;
 
 ##### Expected output
