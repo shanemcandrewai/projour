@@ -10,6 +10,8 @@ const RedisStore = redis(session);
 const port = process.env.PORT || 3000;
 app.set('view engine', 'pug');
 
+// https://github.com/winstonjs/winston#usage
+
 const logger = createLogger({
   level: 'info',
   format: format.combine(
@@ -88,7 +90,12 @@ try {
 }
 
 app.get('/login', (req, res) => {
-  logger.warn({ message: 'GET /login', id: req.session.id, session: req.session });
+  logger.warn({
+    message: 'GET /login',
+    id: req.session.id,
+    session: req.session,
+    referer: req.get('Referer'),
+  });
   if (!req.get('Referer')) {
     logger.warn('deleting session fields');
     delete req.session.from;
@@ -137,7 +144,7 @@ app.get('/logout', (req, res) => {
   res.redirect('/login');
 });
 
-const restrict = async (req, res, next) => {
+const restrict = (req, res, next) => {
   logger.warn({ message: 'login restrict', id: req.session.id, session: req.session });
   if ('user' in req.session) {
     logger.warn({ message: 'logged in', id: req.session.id, session: req.session });
@@ -146,11 +153,17 @@ const restrict = async (req, res, next) => {
     logger.warn({ message: 'not logged in', id: req.session.id, session: req.session });
     req.session.from = 'ProJour';
     req.session.message = 'Please log in';
-    await req.session.save((err) => {
-      if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
+    req.session.save((err) => {
+      if (err) {
+        logger.error({
+          message: err.toString(),
+          function: 'req.session.save',
+        });
+      } else {
+        logger.warn({ message: 'session saved', id: req.session.id, session: req.session });
+        res.redirect('/login');
+      }
     });
-    logger.warn({ message: 'session saved', id: req.session.id, session: req.session });
-    res.redirect('/login');
   }
 };
 
