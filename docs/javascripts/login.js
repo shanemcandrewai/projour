@@ -7,10 +7,10 @@ const getMessages = async (resource = 'messages') => {
       },
     });
     const ret = await response.json();
-    document.getElementById('from').innerHTML = ret;
+    document.getElementById('from').innerHTML = ret.from;
     document.getElementById('message').innerHTML = ret.message;
   } catch (err) {
-    document.getElementById('from').innerHTML = 'ret.from';
+    document.getElementById('from').innerHTML = resource;
     document.getElementById('message').innerHTML = err;
   }
 };

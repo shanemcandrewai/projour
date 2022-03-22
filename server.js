@@ -35,7 +35,7 @@ app.use(
   }),
 );
 app.use(express.static('docs'));
-app.use(express.json());
+// app.use(express.json());
 
 // Initialise session https://github.com/tj/connect-redis
 const sessionClient = createClient({
@@ -115,9 +115,9 @@ app.get('/login', (req, res) => {
 });
 
 // Get session messages
-app.get('/messages', (req) => {
+app.get('/messages', (req, res) => {
   logger.info({ message: 'GET /messages', id: req.session.id, session: req.session });
-  return { from: session.from, message: session.message };
+  res.send({ from: req.session.from, message: req.session.message });
 });
 
 const loginRedis = async (req, res, next) => {
