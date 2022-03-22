@@ -1,3 +1,20 @@
+const getMessages = async (resource = 'messages') => {
+  try {
+    const response = await fetch(resource, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    const ret = await response.json();
+    document.getElementById('from').innerHTML = ret;
+    document.getElementById('message').innerHTML = ret.message;
+  } catch (err) {
+    document.getElementById('from').innerHTML = 'ret.from';
+    document.getElementById('message').innerHTML = err;
+  }
+};
+
 const loginPost = async (resource = 'login', data = {
   url: document.getElementById('floatingUrl').value,
   user: document.getElementById('floatingUser').value,
@@ -19,4 +36,5 @@ const loginPost = async (resource = 'login', data = {
   }
 };
 
+getMessages();
 document.getElementById('butLogin').addEventListener('click', () => loginPost());

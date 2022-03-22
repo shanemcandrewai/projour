@@ -1,4 +1,5 @@
 import helmet from 'helmet';
+import path from 'path';
 import express from 'express';
 import session from 'express-session';
 import { createClient } from 'redis';
@@ -8,54 +9,35 @@ import { createLogger, format, transports } from 'winston';
 const app = express();
 const RedisStore = redis(session);
 const port = process.env.PORT || 3000;
-app.set('view engine', 'pug');
 
-// https://github.com/winstonjs/winston#usage
+// https://github.com/winstonjs/winston/blob/master/examples/color-message.js
 
 const logger = createLogger({
-  level: 'info',
   format: format.combine(
-    format.timestamp({
-      format: 'YYYY-MM-DD HH:mm:ss',
-    }),
-    format.errors({ stack: true }),
-    format.splat(),
-    format.simple(),
+    format.colorize(),
+    format.prettyPrint(),
   ),
-  defaultMeta: { service: 'projour' },
   transports: [
-    new transports.File({ filename: 'projour-error.log', level: 'error' }),
-    new transports.File({ filename: 'projour-start-combined.log' }),
+    new transports.Console(),
   ],
 });
 
-// If we're not in production then **ALSO** log to the `console`
-// with the colorized simple format.
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new transports.Console({
-    format: format.combine(
-      format.colorize(),
-      // format.simple(),
-      format.prettyPrint(),
-    ),
-  }));
-}
-
 // middleware
 
+// https://helmetjs.github.io/
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
       scriptSrc: ["'self'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
-      connectSrc: ['http://localhost:3000/login'],
+      connectSrc: ['http://localhost:3000/login', 'http://localhost:3000/messages'],
     },
   }),
 );
 app.use(express.static('docs'));
 app.use(express.json());
 
-// Initialise session
+// Initialise session https://github.com/tj/connect-redis
 const sessionClient = createClient({
   url: process.env.URL,
   username: process.env.USERNAME,
@@ -74,9 +56,10 @@ try {
     saveUninitialized: false, // don't create session until something stored
     secret: process.env.SESSION_SECRET,
     cookie: {},
-    name: 'sessionId',
+    name: 'sessionId', // https://expressjs.com/en/advanced/best-practice-security.html
   };
 
+  // https://github.com/expressjs/session
   if (app.get('env') === 'production') {
     app.set('trust proxy', 1); // trust first proxy
     sessionOptions.cookie.secure = true; // serve secure cookies
@@ -89,24 +72,52 @@ try {
   logger.error({ function: 'sessionClient.connect', message: err.toString() });
 }
 
+// Home
+const restrict = (req, res, next) => {
+  logger.warn({ message: 'login restrict', id: req.session.id, session: req.session });
+  if ('user' in req.session) {
+    logger.warn({ message: 'logged in', id: req.session.id, session: req.session });
+    next();
+  } else {
+    logger.warn({ message: 'not logged in', id: req.session.id, session: req.session });
+    req.session.from = 'ProJour';
+    req.session.message = 'Please log in';
+    req.session.save((err) => {
+      if (err) {
+        logger.error({ message: err.toString(), function: 'req.session.save' });
+      } else {
+        logger.warn({ message: 'session saved', id: req.session.id, session: req.session });
+        res.redirect('/login');
+      }
+    });
+  }
+};
+
+app.get('/', restrict, (req, res) => {
+  logger.warn({ message: 'GET /', id: req.session.id, session: req.session });
+  if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
+  redisStore.get(req.session.id, (error, sess) => {
+    if (error) { res.send(`failed to get session : ${error}`); } else {
+      res.send(`${req.session.id} xxx ${JSON.stringify(sess)} <a href="/logout">logout</a>`);
+    }
+  });
+});
+
+// Login
 app.get('/login', (req, res) => {
-  logger.warn({
+  logger.info({
     message: 'GET /login',
     id: req.session.id,
     session: req.session,
     referer: req.get('Referer'),
   });
-  if (!req.get('Referer')) {
-    logger.warn('deleting session fields');
-    delete req.session.from;
-    delete req.session.message;
-  } else {
-    logger.warn({ message: 'referer found', referer: req.get('Referer') });
-  }
-  res.render('login', {
-    from: req.session.from,
-    message: req.session.message,
-  });
+  res.sendFile(path.resolve('docs/login.html'));
+});
+
+// Get session messages
+app.get('/messages', (req) => {
+  logger.info({ message: 'GET /messages', id: req.session.id, session: req.session });
+  return { from: session.from, message: session.message };
 });
 
 const loginRedis = async (req, res, next) => {
@@ -134,47 +145,13 @@ const loginRedis = async (req, res, next) => {
 };
 
 app.post('/login', loginRedis, (req, res) => {
-  logger.warn({ message: 'login post', id: req.session.id, session: req.session });
+  logger.info({ message: 'login post', id: req.session.id, session: req.session });
   res.json(req.session);
 });
 
 app.get('/logout', (req, res) => {
-  logger.warn('xxxy');
   delete req.session.user;
   res.redirect('/login');
-});
-
-const restrict = (req, res, next) => {
-  logger.warn({ message: 'login restrict', id: req.session.id, session: req.session });
-  if ('user' in req.session) {
-    logger.warn({ message: 'logged in', id: req.session.id, session: req.session });
-    next();
-  } else {
-    logger.warn({ message: 'not logged in', id: req.session.id, session: req.session });
-    req.session.from = 'ProJour';
-    req.session.message = 'Please log in';
-    req.session.save((err) => {
-      if (err) {
-        logger.error({
-          message: err.toString(),
-          function: 'req.session.save',
-        });
-      } else {
-        logger.warn({ message: 'session saved', id: req.session.id, session: req.session });
-        res.redirect('/login');
-      }
-    });
-  }
-};
-
-app.get('/', restrict, (req, res) => {
-  logger.warn({ message: 'GET /', id: req.session.id, session: req.session });
-  if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
-  redisStore.get(req.session.id, (error, sess) => {
-    if (error) { res.send(`failed to get session : ${error}`); } else {
-      res.send(`${req.session.id} xxx ${JSON.stringify(sess)} <a href="/logout">logout</a>`);
-    }
-  });
 });
 
 app.listen(port, () => {
