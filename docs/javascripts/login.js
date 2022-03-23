@@ -30,7 +30,8 @@ const loginPost = async (resource = 'login', data = {
       body: JSON.stringify(data),
     });
     const ret = await response.json();
-    document.getElementById('message').innerHTML = ret.message;
+    if ('message' in ret) document.getElementById('message').innerHTML = ret.message;
+    else document.getElementById('message').innerHTML = '';
   } catch (err) {
     document.getElementById('message').innerHTML = err;
   }

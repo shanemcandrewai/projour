@@ -35,7 +35,7 @@ app.use(
   }),
 );
 app.use(express.static('docs'));
-// app.use(express.json());
+app.use(express.json());
 
 // Initialise session https://github.com/tj/connect-redis
 const sessionClient = createClient({
@@ -120,8 +120,7 @@ app.get('/messages', (req, res) => {
   res.send({ from: req.session.from, message: req.session.message });
 });
 
-const loginRedis = async (req, res, next) => {
-  logger.warn('xxx');
+const loginRedis = async (req, res) => {
   const userClient = createClient({
     url: req.body.url,
     username: req.body.user,
@@ -136,17 +135,19 @@ const loginRedis = async (req, res, next) => {
     });
     delete req.session.from;
     delete req.session.message;
+    logger.error('rrrd');
+
+    res.redirect('/');
   } catch (err) {
     logger.error({ message: err.toString(), function: 'loginRedis' });
     req.session.from = req.body.url;
     req.session.message = err.toString();
+    res.json(req.session);
   }
-  next();
 };
 
-app.post('/login', loginRedis, (req, res) => {
-  logger.info({ message: 'login post', id: req.session.id, session: req.session });
-  res.json(req.session);
+app.post('/login', loginRedis, (req) => {
+  logger.info({ message: 'login post2', id: req.session.id, session: req.session });
 });
 
 app.get('/logout', (req, res) => {
