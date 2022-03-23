@@ -7,8 +7,8 @@ const getMessages = async (resource = 'messages') => {
       },
     });
     const ret = await response.json();
-    document.getElementById('from').innerHTML = ret.from;
-    document.getElementById('message').innerHTML = ret.message;
+    document.getElementById('from').innerHTML = ret.from || '';
+    document.getElementById('message').innerHTML = ret.message || '';
   } catch (err) {
     document.getElementById('from').innerHTML = resource;
     document.getElementById('message').innerHTML = err;
@@ -30,8 +30,7 @@ const loginPost = async (resource = 'login', data = {
       body: JSON.stringify(data),
     });
     const ret = await response.json();
-    if ('message' in ret) document.getElementById('message').innerHTML = ret.message;
-    else document.getElementById('message').innerHTML = '';
+    document.getElementById('message').innerHTML = ret.message || '';
   } catch (err) {
     document.getElementById('message').innerHTML = err;
   }
