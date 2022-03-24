@@ -1,39 +1,14 @@
-import helmet from 'helmet';
 import path from 'path';
 import express from 'express';
 import session from 'express-session';
 import { createClient } from 'redis';
 import redis from 'connect-redis';
-import { createLogger, format, transports } from 'winston';
+/* eslint no-console: ["error", { allow: ["log"] }] */
 
 const app = express();
 const RedisStore = redis(session);
 const port = process.env.PORT || 3000;
 
-// https://github.com/winstonjs/winston/blob/master/examples/color-message.js
-
-const logger = createLogger({
-  format: format.combine(
-    format.colorize(),
-    format.prettyPrint(),
-  ),
-  transports: [
-    new transports.Console(),
-  ],
-});
-
-// middleware
-
-// HTTP header security https://helmetjs.github.io/
-app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      scriptSrc: ["'self'",
-        'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
-      connectSrc: ['http://localhost:3000/login', 'http://localhost:3000/messages'],
-    },
-  }),
-);
 app.use(express.static('docs'));
 app.use(express.json());
 
@@ -69,24 +44,24 @@ try {
     app.use(session(sessionOptions));
   }
 } catch (err) {
-  logger.error({ function: 'sessionClient.connect', message: err.toString() });
+  console.log({ function: 'sessionClient.connect', message: err.toString() });
 }
 
 // Home
 const restrict = (req, res, next) => {
-  logger.warn({ message: 'login restrict', id: req.session.id, session: req.session });
+  console.log({ message: 'login restrict', id: req.session.id, session: req.session });
   if ('user' in req.session) {
-    logger.warn({ message: 'logged in', id: req.session.id, session: req.session });
+    console.log({ message: 'logged in', id: req.session.id, session: req.session });
     next();
   } else {
-    logger.warn({ message: 'not logged in', id: req.session.id, session: req.session });
+    console.log({ message: 'not logged in', id: req.session.id, session: req.session });
     req.session.from = 'ProJour';
     req.session.message = 'Please log in';
     req.session.save((err) => {
       if (err) {
-        logger.error({ message: err.toString(), function: 'restrict req.session.save' });
+        console.log({ message: err.toString(), function: 'restrict req.session.save' });
       } else {
-        logger.warn({ message: 'session saved', id: req.session.id, session: req.session });
+        console.log({ message: 'session saved', id: req.session.id, session: req.session });
         res.redirect('/login');
       }
     });
@@ -94,7 +69,7 @@ const restrict = (req, res, next) => {
 };
 
 app.get('/', restrict, (req, res) => {
-  logger.warn({ message: 'GET /', id: req.session.id, session: req.session });
+  console.log({ message: 'GET /', id: req.session.id, session: req.session });
   if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
   redisStore.get(req.session.id, (error, sess) => {
     if (error) { res.send(`failed to get session : ${error}`); } else {
@@ -105,7 +80,7 @@ app.get('/', restrict, (req, res) => {
 
 // Login
 app.get('/login', (req, res) => {
-  logger.info({
+  console.log({
     message: 'GET /login',
     id: req.session.id,
     session: req.session,
@@ -116,19 +91,19 @@ app.get('/login', (req, res) => {
 
 // Get session messages
 app.get('/messages', (req, res) => {
-  logger.info({ message: 'GET /messages', id: req.session.id, session: req.session });
+  console.log({ message: 'GET /messages', id: req.session.id, session: req.session });
   res.send({ from: req.session.from, message: req.session.message });
 });
 
 const saveSession = async (req) => new Promise((resolve, reject) => {
   req.session.save((err) => {
     if (err) {
-      logger.error({
+      console.log({
         message: err.toString(), function: 'saveSession', id: req.session.id, session: req.session,
       });
       reject(err.toString());
     } else {
-      logger.info({
+      console.log({
         message: 'session saved', function: 'saveSession', id: req.session.id, session: req.session,
       });
       resolve('saveSession succeeded');
@@ -138,11 +113,11 @@ const saveSession = async (req) => new Promise((resolve, reject) => {
 
 // Login post
 const loginRedis = async (req, res) => {
-  logger.info({ message: 'loginRedis', id: req.session.id, session: req.session });
+  console.log({ message: 'loginRedis', id: req.session.id, session: req.session });
   const userClient = createClient({
-    url: req.body.url,
-    username: req.body.user,
-    password: req.body.password,
+    url: process.env.URL_TEST,
+    username: process.env.USERNAME_TEST,
+    password: process.env.PASSWORD_TEST,
   });
   try {
     await userClient.connect();
@@ -151,19 +126,19 @@ const loginRedis = async (req, res) => {
     delete req.session.from;
     delete req.session.message;
     await saveSession(req);
-    logger.info({ message: 'loginRedis saved2', id: req.session.id, session: req.session });
+    console.log({ message: 'loginRedis saved2', id: req.session.id, session: req.session });
     res.redirect('/');
   } catch (err) {
     req.session.from = req.body.url;
     req.session.message = err.toString();
-    logger.error({
+    console.log({
       message: 'err', function: 'loginRedis userClient', id: req.session.id, session: req.session,
     });
     try {
       await saveSession(req);
       res.redirect('/login');
     } catch (err2) {
-      logger.error({
+      console.log({
         message: 'loginRedis err2', id: req.session.id, session: req.session,
       });
     }
@@ -172,7 +147,7 @@ const loginRedis = async (req, res) => {
 
 app.post('/login', async (req, res) => {
   await loginRedis(req, res);
-  logger.info({ message: 'login post', id: req.session.id, session: req.session });
+  console.log({ message: 'login post', id: req.session.id, session: req.session });
 });
 
 app.get('/logout', (req, res) => {
@@ -181,5 +156,5 @@ app.get('/logout', (req, res) => {
 });
 
 app.listen(port, () => {
-  logger.info({ message: 'Node.js HTTP server listening', script: import.meta.url, port });
+  console.log({ message: 'Node.js HTTP server listening', script: import.meta.url, port });
 });
