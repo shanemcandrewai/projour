@@ -27,10 +27,15 @@ const loginPost = async (resource = 'login', data = {
       headers: {
         'Content-Type': 'application/json',
       },
+      // redirect: 'error',
       body: JSON.stringify(data),
     });
-    const ret = await response.json();
-    document.getElementById('message').innerHTML = ret.message || '';
+    if (!response.redirected) {
+      const ret = await response.json();
+      document.getElementById('message').innerHTML = ret.message || '';
+    } else {
+      window.location.replace(await response.url);
+    }
   } catch (err) {
     document.getElementById('message').innerHTML = err;
   }

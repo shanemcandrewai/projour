@@ -34,15 +34,7 @@ try {
     name: 'sessionId', // https://expressjs.com/en/advanced/best-practice-security.html
   };
 
-  // https://github.com/expressjs/session
-  if (app.get('env') === 'production') {
-    app.set('trust proxy', 1); // trust first proxy
-    sessionOptions.cookie.secure = true; // serve secure cookies
-  }
-
-  if (sessionOptions.secret) {
-    app.use(session(sessionOptions));
-  }
+  app.use(session(sessionOptions));
 } catch (err) {
   console.log({ function: 'sessionClient.connect', message: err.toString() });
 }
@@ -70,10 +62,10 @@ const restrict = (req, res, next) => {
 
 app.get('/', restrict, (req, res) => {
   console.log({ message: 'GET /', id: req.session.id, session: req.session });
-  if ('shane' in req.session) { req.session.shane += 1; } else { req.session.shane = 1; }
+  if ('hits' in req.session) { req.session.hits += 1; } else { req.session.hits = 1; }
   redisStore.get(req.session.id, (error, sess) => {
     if (error) { res.send(`failed to get session : ${error}`); } else {
-      res.send(`${req.session.id} xxx ${JSON.stringify(sess)} <a href="/logout">logout</a>`);
+      res.send(`session ID ${req.session.id} session variables ${JSON.stringify(sess)} <a href="/logout">logout</a>`);
     }
   });
 });
@@ -112,46 +104,55 @@ const saveSession = async (req) => new Promise((resolve, reject) => {
 });
 
 // Login post
-const loginRedis = async (req, res) => {
+const loginRedis = async (req) => {
   console.log({ message: 'loginRedis', id: req.session.id, session: req.session });
   const userClient = createClient({
     url: process.env.URL_TEST,
     username: process.env.USERNAME_TEST,
     password: process.env.PASSWORD_TEST,
   });
+  console.log({
+    message: 'createClient', user: process.env.USERNAME_TEST, password: process.env.PASSWORD_TEST, session: req.session,
+  });
   try {
     await userClient.connect();
     await userClient.set('testKey', 'testValue');
-    req.session.user = req.body.user;
+    req.session.user = process.env.USERNAME_TEST;
     delete req.session.from;
     delete req.session.message;
     await saveSession(req);
-    console.log({ message: 'loginRedis saved2', id: req.session.id, session: req.session });
-    res.redirect('/');
+    console.log({ message: 'loginRedis userClient succussfully authenticated, session saved', id: req.session.id, session: req.session });
+    return '/';
   } catch (err) {
     req.session.from = req.body.url;
     req.session.message = err.toString();
     console.log({
-      message: 'err', function: 'loginRedis userClient', id: req.session.id, session: req.session,
+      message: err, function: 'loginRedis userClient failiure', id: req.session.id, session: req.session,
     });
     try {
       await saveSession(req);
-      res.redirect('/login');
+      return '/login';
     } catch (err2) {
       console.log({
-        message: 'loginRedis err2', id: req.session.id, session: req.session,
+        message: 'loginRedis session save failiure', id: req.session.id, session: req.session,
       });
     }
   }
+  return 'unreachable';
 };
 
 app.post('/login', async (req, res) => {
-  await loginRedis(req, res);
+  const rd = await loginRedis(req, res);
+  console.log({
+    message: 'login post redirect', redirect: rd, id: req.session.id, session: req.session,
+  });
+  res.redirect(rd);
   console.log({ message: 'login post', id: req.session.id, session: req.session });
 });
 
 app.get('/logout', (req, res) => {
   delete req.session.user;
+  console.log({ message: 'logout', id: req.session.id, session: req.session });
   res.redirect('/login');
 });
 
