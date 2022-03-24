@@ -137,7 +137,7 @@ const saveSession = async (req) => new Promise((resolve, reject) => {
 });
 
 // Login post
-const loginRedis = async (req, res) => {
+const loginRedis = async (req) => {
   logger.info({ message: 'loginRedis', id: req.session.id, session: req.session });
   const userClient = createClient({
     url: req.body.url,
@@ -151,8 +151,8 @@ const loginRedis = async (req, res) => {
     delete req.session.from;
     delete req.session.message;
     await saveSession(req);
-    logger.info({ message: 'loginRedis saved2', id: req.session.id, session: req.session });
-    res.redirect('/');
+    logger.info({ message: 'loginRedis saved', id: req.session.id, session: req.session });
+    return '/';
   } catch (err) {
     req.session.from = req.body.url;
     req.session.message = err.toString();
@@ -161,18 +161,24 @@ const loginRedis = async (req, res) => {
     });
     try {
       await saveSession(req);
-      res.redirect('/login');
+      return null;
     } catch (err2) {
       logger.error({
         message: 'loginRedis err2', id: req.session.id, session: req.session,
       });
     }
   }
+  return 'unreachable';
 };
 
 app.post('/login', async (req, res) => {
-  await loginRedis(req, res);
-  logger.info({ message: 'login post', id: req.session.id, session: req.session });
+  const redir = await loginRedis(req, res);
+  logger.info({
+    message: 'login redir', redirect: redir, id: req.session.id, session: req.session,
+  });
+  if (redir) {
+    res.redirect(redir);
+  } else { res.send({ from: req.session.from, message: req.session.message }); }
 });
 
 app.get('/logout', (req, res) => {

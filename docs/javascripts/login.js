@@ -29,10 +29,14 @@ const loginPost = async (resource = 'login', data = {
       },
       body: JSON.stringify(data),
     });
-    const ret = await response.json();
-    document.getElementById('message').innerHTML = ret.message || '';
+    if (response.redirected) {
+      window.location.replace(response.url);
+    } else {
+      const ret = await response.json();
+      document.getElementById('message').innerHTML = ret.message || '';
+    }
   } catch (err) {
-    document.getElementById('message').innerHTML = err;
+    document.getElementById('message').innerHTML = 'err';
   }
 };
 
