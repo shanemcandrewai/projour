@@ -157,14 +157,21 @@ const loginRedis = async (req, res) => {
     req.session.from = req.body.url;
     req.session.message = err.toString();
     logger.error({
-      message: 'loginRedis err', id: req.session.id, session: req.session,
+      message: 'err', function: 'loginRedis userClient', id: req.session.id, session: req.session,
     });
-    await saveSession(req);
-    res.redirect('/login');
+    try {
+      await saveSession(req);
+      res.redirect('/login');
+    } catch (err2) {
+      logger.error({
+        message: 'loginRedis err2', id: req.session.id, session: req.session,
+      });
+    }
   }
 };
 
-app.post('/login', loginRedis, (req) => {
+app.post('/login', async (req, res) => {
+  await loginRedis(req, res);
   logger.info({ message: 'login post', id: req.session.id, session: req.session });
 });
 
