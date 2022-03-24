@@ -24,7 +24,7 @@ const logger = createLogger({
 
 // middleware
 
-// https://helmetjs.github.io/
+// HTTP header security https://helmetjs.github.io/
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
@@ -84,7 +84,7 @@ const restrict = (req, res, next) => {
     req.session.message = 'Please log in';
     req.session.save((err) => {
       if (err) {
-        logger.error({ message: err.toString(), function: 'req.session.save' });
+        logger.error({ message: err.toString(), function: 'restrict req.session.save' });
       } else {
         logger.warn({ message: 'session saved', id: req.session.id, session: req.session });
         res.redirect('/login');
@@ -120,7 +120,25 @@ app.get('/messages', (req, res) => {
   res.send({ from: req.session.from, message: req.session.message });
 });
 
+const saveSession = async (req) => new Promise((resolve, reject) => {
+  req.session.save((err) => {
+    if (err) {
+      logger.error({
+        message: err.toString(), function: 'saveSession', id: req.session.id, session: req.session,
+      });
+      reject(err.toString());
+    } else {
+      logger.info({
+        message: 'session saved', function: 'saveSession', id: req.session.id, session: req.session,
+      });
+      resolve('saveSession succeeded');
+    }
+  });
+});
+
+// Login post
 const loginRedis = async (req, res) => {
+  logger.info({ message: 'loginRedis', id: req.session.id, session: req.session });
   const userClient = createClient({
     url: req.body.url,
     username: req.body.user,
@@ -130,24 +148,24 @@ const loginRedis = async (req, res) => {
     await userClient.connect();
     await userClient.set('testKey', 'testValue');
     req.session.user = req.body.user;
-    await req.session.save((err) => {
-      if (err) { logger.error({ message: err.toString(), function: 'req.session.save' }); }
-    });
     delete req.session.from;
     delete req.session.message;
-    logger.error('rrrd');
-
+    await saveSession(req);
+    logger.info({ message: 'loginRedis saved2', id: req.session.id, session: req.session });
     res.redirect('/');
   } catch (err) {
-    logger.error({ message: err.toString(), function: 'loginRedis' });
     req.session.from = req.body.url;
     req.session.message = err.toString();
-    res.json(req.session);
+    logger.error({
+      message: 'loginRedis err', id: req.session.id, session: req.session,
+    });
+    await saveSession(req);
+    res.redirect('/login');
   }
 };
 
 app.post('/login', loginRedis, (req) => {
-  logger.info({ message: 'login post2', id: req.session.id, session: req.session });
+  logger.info({ message: 'login post', id: req.session.id, session: req.session });
 });
 
 app.get('/logout', (req, res) => {
