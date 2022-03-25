@@ -22,7 +22,7 @@ const logger = createLogger({
 });
 
 // HTTP header security https://helmetjs.github.io/
-/* app.use(
+app.use(
   helmet.contentSecurityPolicy({
     directives: {
       scriptSrc: ["'self'",
@@ -30,7 +30,7 @@ const logger = createLogger({
       connectSrc: ['http://localhost:3000/login', 'http://localhost:3000/error'],
     },
   }),
-); */
+);
 app.use(express.static('docs'));
 app.use(express.json());
 
@@ -70,8 +70,6 @@ const restrict = (req, res, next) => {
     if ('user' in req.session) {
       next();
     } else {
-      req.session.from = 'ProJour';
-      req.session.error = 'Please log in';
       req.session.save((error) => {
         if (error) {
           logger.error({ message: error.toString(), function: 'restrict req.session.save' });
@@ -94,21 +92,11 @@ app.get('/', restrict, (req, res) => {
 // Login
 app.get('/login', (req, res) => {
   logger.info({ message: 'GET /login', session: req.session });
-
-  // delete req.session.from;
-  // delete req.session.error;
   res.sendFile(path.resolve('docs/login.html'));
-});
-
-// Get session error
-app.get('/error', (req, res) => {
-  logger.info({ message: 'GET /error', session: req.session });
-  res.send({ from: req.session.from, error: req.session.error });
 });
 
 const saveSession = async (req) => new Promise((resolve, reject) => {
   req.session.save((error) => {
-    logger.info({ message: 'error', function: 'saveSession', session: req.session });
     if (error) reject(error); else resolve('saveSession succeeded');
   });
 });
@@ -139,12 +127,11 @@ const loginRedis = async (req) => {
 app.post('/login', async (req, res) => {
   const redir = await loginRedis(req);
   logger.info({ message: 'POST /login', session: req.session, redir });
-  res.redirect(redir);
+  res.json({ redirect: redir, from: req.session.from, error: req.session.error });
 });
 
 app.get('/logout', (req, res) => {
   delete req.session.user;
-  logger.info({ message: 'GET /logout', session: req.session });
   res.redirect('/login');
 });
 

@@ -1,20 +1,3 @@
-const getError = async (resource = 'error') => {
-  try {
-    const response = await fetch(resource, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    const ret = await response.json();
-    document.getElementById('from').innerHTML = ret.from || '';
-    document.getElementById('message').innerHTML = ret.error || '';
-  } catch (error) {
-    document.getElementById('from').innerHTML = resource;
-    document.getElementById('message').innerHTML = error;
-  }
-};
-
 const loginPost = async (resource = 'login', data = {
   url: document.getElementById('floatingUrl').value,
   user: document.getElementById('floatingUser').value,
@@ -29,12 +12,16 @@ const loginPost = async (resource = 'login', data = {
       },
       body: JSON.stringify(data),
     });
-    // document.getElementById('message').innerHTML = resp.url;
-    window.location.replace(resp.url);
+    const ret = await resp.json();
+    if (ret.redirect === '/login') {
+      document.getElementById('from').innerHTML = ret.from || '';
+      document.getElementById('message').innerHTML = ret.error || '';
+    } else {
+      window.location.replace(ret.redirect);
+    }
   } catch (error) {
     document.getElementById('message').innerHTML = error;
   }
 };
 
-getError();
 document.getElementById('butLogin').addEventListener('click', () => loginPost());
