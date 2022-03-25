@@ -13,12 +13,9 @@ const loginPost = async (resource = 'login', data = {
       // redirect: 'error',
       body: JSON.stringify(data),
     });
-    if (!response.redirected) {
-      const ret = await response.json();
-      document.getElementById('message').innerHTML = ret.message || '';
-    } else {
-      window.location.replace(response.url);
-    }
+    const ret = await response.json();
+    // document.getElementById('message').innerHTML = JSON.stringify(ret) || '';
+    window.location.replace(response.url);
   } catch (err) {
     document.getElementById('message').innerHTML = err;
   }

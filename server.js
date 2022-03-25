@@ -2,11 +2,15 @@ import express from 'express';
 import session from 'express-session';
 import { createClient } from 'redis';
 import redis from 'connect-redis';
+import path from 'path';
 /* eslint no-console: ["error", { allow: ["log"] }] */
 
 const app = express();
 const RedisStore = redis(session);
 const port = process.env.PORT || 3000;
+
+app.use(express.static('docs'));
+app.use(express.json());
 
 // Initialise session https://github.com/tj/connect-redis
 const sessionClient = createClient({
@@ -64,7 +68,12 @@ const loginRedis = async (req, pass) => {
   }
 };
 
-app.get('/login_success', async (req, res) => {
+app.get('/login', async (req, res) => {
+  res.sendFile(path.resolve('docs/login.html'));
+});
+
+app.post('/login', async (req, res) => {
+  console.log({ message: 'GET /login_success', id: req.session.id, session: req.session });
   res.redirect(await loginRedis(req, process.env.PASSWORD_TEST));
 });
 
