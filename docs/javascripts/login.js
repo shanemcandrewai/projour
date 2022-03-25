@@ -17,7 +17,7 @@ const loginPost = async (resource = 'login', data = {
       const ret = await response.json();
       document.getElementById('message').innerHTML = ret.message || '';
     } else {
-      window.location.replace(await response.url);
+      window.location.replace(response.url);
     }
   } catch (err) {
     document.getElementById('message').innerHTML = err;
