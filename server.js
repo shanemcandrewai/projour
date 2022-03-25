@@ -35,7 +35,7 @@ try {
   }
   app.use(session(sessionOptions));
 } catch (err) {
-  console.log({ function: 'sessionClient.connect', message: err.toString() });
+  console.log({ message: err.toString(), function: 'sessionClient.connect' });
 }
 
 const saveSession = async (req) => new Promise((resolve, reject) => {
