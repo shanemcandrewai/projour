@@ -29,7 +29,7 @@ const loginPost = async (resource = 'login', data = {
       },
       body: JSON.stringify(data),
     });
-    document.getElementById('message').innerHTML = resp.url;
+    // document.getElementById('message').innerHTML = resp.url;
     window.location.replace(resp.url);
   } catch (error) {
     document.getElementById('message').innerHTML = error;

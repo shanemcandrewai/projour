@@ -144,6 +144,7 @@ app.post('/login', async (req, res) => {
 
 app.get('/logout', (req, res) => {
   delete req.session.user;
+  logger.info({ message: 'GET /logout', session: req.session });
   res.redirect('/login');
 });
 
