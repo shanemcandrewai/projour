@@ -22,13 +22,15 @@ const loginPost = async (resource = 'login', data = {
 }) => {
   document.getElementById('from').innerHTML = document.getElementById('floatingUrl').value;
   try {
-    await fetch(resource, {
+    const resp = await fetch(resource, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
     });
+    document.getElementById('message').innerHTML = resp.url;
+    window.location.replace(resp.url);
   } catch (error) {
     document.getElementById('message').innerHTML = error;
   }

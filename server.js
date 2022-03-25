@@ -139,7 +139,7 @@ const loginRedis = async (req) => {
 app.post('/login', async (req, res) => {
   const redir = await loginRedis(req);
   logger.info({ message: 'POST /login', session: req.session, redir });
-  res.json(redir);
+  res.redirect(redir);
 });
 
 app.get('/logout', (req, res) => {
