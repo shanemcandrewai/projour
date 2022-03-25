@@ -1,4 +1,4 @@
-const getMessages = async (resource = 'messages') => {
+const getError = async (resource = 'error') => {
   try {
     const response = await fetch(resource, {
       method: 'GET',
@@ -8,10 +8,10 @@ const getMessages = async (resource = 'messages') => {
     });
     const ret = await response.json();
     document.getElementById('from').innerHTML = ret.from || '';
-    document.getElementById('message').innerHTML = ret.message || '';
-  } catch (err) {
+    document.getElementById('message').innerHTML = ret.error || '';
+  } catch (error) {
     document.getElementById('from').innerHTML = resource;
-    document.getElementById('message').innerHTML = err;
+    document.getElementById('message').innerHTML = error;
   }
 };
 
@@ -22,23 +22,17 @@ const loginPost = async (resource = 'login', data = {
 }) => {
   document.getElementById('from').innerHTML = document.getElementById('floatingUrl').value;
   try {
-    const response = await fetch(resource, {
+    await fetch(resource, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
     });
-    if (response.redirected) {
-      window.location.replace(response.url);
-    } else {
-      const ret = await response.json();
-      document.getElementById('message').innerHTML = ret.message || '';
-    }
-  } catch (err) {
-    document.getElementById('message').innerHTML = 'err';
+  } catch (error) {
+    document.getElementById('message').innerHTML = error;
   }
 };
 
-getMessages();
+getError();
 document.getElementById('butLogin').addEventListener('click', () => loginPost());
