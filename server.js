@@ -85,7 +85,7 @@ const restrict = (req, res, next) => {
 };
 
 app.get('/', restrict, (req, res) => {
-  res.json({ route: 'GET /', id: req.session.id, session: req.session });
+  res.sendFile(path.resolve('docs/tree.html'));
 });
 
 app.get('/message', (req, res) => {

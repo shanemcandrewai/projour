@@ -36,6 +36,7 @@ const loginPost = async (resource = 'login', data = {
       document.getElementById('message').innerHTML = ret.message || '';
     }
   } catch (error) {
+    document.getElementById('from').innerHTML = 'login.js'
     document.getElementById('message').innerHTML = error;
   }
 };
