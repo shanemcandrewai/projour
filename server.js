@@ -27,7 +27,7 @@ app.use(
     directives: {
       scriptSrc: ["'self'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
-      connectSrc: ['http://localhost:3000/login', 'http://localhost:3000/error'],
+      connectSrc: ['http://localhost:3000/login', 'http://localhost:3000/message'],
     },
   }),
 );
@@ -44,6 +44,7 @@ const sessionClient = createClient({
 
 try {
   await sessionClient.connect();
+  await sessionClient.set('testKey', 'testValue');
 
   const sessionOptions = {
     store: new RedisStore({ client: sessionClient }),
@@ -67,21 +68,18 @@ try {
 // Home
 const restrict = (req, res, next) => {
   try {
-    if ('user' in req.session) {
-      next();
-    } else {
-      req.session.save((error) => {
-        if (error) {
-          logger.error({ message: error.toString(), function: 'restrict req.session.save' });
-        } else {
-          res.redirect('/login');
+    if ('user' in req.session) next(); else {
+      req.session.from = 'ProJour';
+      req.session.message = 'Please log in';
+      req.session.save((errorSave) => {
+        if (errorSave) {
+          logger.error({ from: 'ProJour', message: errorSave.toString() });
         }
       });
+      res.redirect('/login');
     }
   } catch (error) {
-    const errorMessage = { message: error.toString(), function: 'restrict' };
-    logger.error(errorMessage);
-    res.json(errorMessage);
+    logger.error({ message: error, function: 'restrict', session: req.session });
   }
 };
 
@@ -89,15 +87,23 @@ app.get('/', restrict, (req, res) => {
   res.json({ route: 'GET /', id: req.session.id, session: req.session });
 });
 
+app.get('/message', (req, res) => {
+  try {
+    res.json({ from: req.session.from, message: req.session.message });
+  } catch (error) {
+    logger.error({ message: error, route: 'GET /message', session: req.session });
+  }
+});
+
 // Login
 app.get('/login', (req, res) => {
-  logger.info({ message: 'GET /login', session: req.session });
   res.sendFile(path.resolve('docs/login.html'));
 });
 
 const saveSession = async (req) => new Promise((resolve, reject) => {
   req.session.save((error) => {
-    if (error) reject(error); else resolve('saveSession succeeded');
+    if (error) reject(error.toString());
+    else resolve('saveSession succeeded');
   });
 });
 
@@ -112,27 +118,33 @@ const loginRedis = async (req) => {
     await userClient.connect();
     await userClient.set('testKey', 'testValue');
     req.session.user = req.body.user;
-    delete req.session.from;
-    delete req.session.error;
+    req.session.from = 'ProJour';
+    req.session.message = `Currently logged in as ${req.body.user}`;
     await saveSession(req);
-    return '/';
+    return {};
   } catch (error) {
-    req.session.from = req.body.url;
-    req.session.error = error.toString();
-    await saveSession(req);
-    return '/login';
+    try {
+      await saveSession(req);
+      return { from: req.body.url, message: error.toString() };
+    } catch (errorSave) {
+      return { from: 'Projour', message: errorSave.toString() };
+    }
   }
 };
 
 app.post('/login', async (req, res) => {
-  const redir = await loginRedis(req);
-  logger.info({ message: 'POST /login', session: req.session, redir });
-  res.json({ redirect: redir, from: req.session.from, error: req.session.error });
+  res.json(await loginRedis(req));
 });
 
 app.get('/logout', (req, res) => {
-  delete req.session.user;
-  res.redirect('/login');
+  try {
+    delete req.session.user;
+    delete req.session.from;
+    delete req.session.message;
+    res.redirect('/login');
+  } catch (error) {
+    logger.error({ message: error, route: 'GET /logout', session: req.session });
+  }
 });
 
 app.listen(port, () => {
