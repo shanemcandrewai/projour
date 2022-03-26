@@ -27,7 +27,8 @@ app.use(
     directives: {
       scriptSrc: ["'self'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
-      connectSrc: ['http://localhost:3000/login', 'http://localhost:3000/message'],
+      connectSrc: ['http://localhost:3000/login', 'https://projour.herokuapp.com/login',
+        'http://localhost:3000/message', 'https://projour.herokuapp.com/message'],
     },
   }),
 );
