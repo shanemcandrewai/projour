@@ -2,9 +2,6 @@ const getMessage = async () => {
   try {
     const resp = await fetch('message', {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
     const ret = await resp.json();
     document.getElementById('from').innerHTML = ret.from || '';
@@ -36,7 +33,7 @@ const loginPost = async (resource = 'login', data = {
       document.getElementById('message').innerHTML = ret.message || '';
     }
   } catch (error) {
-    document.getElementById('from').innerHTML = 'login.js'
+    document.getElementById('from').innerHTML = 'login.js';
     document.getElementById('message').innerHTML = error;
   }
 };
