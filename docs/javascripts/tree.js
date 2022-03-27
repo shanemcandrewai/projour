@@ -9,46 +9,42 @@ for (let i = 0; i < toggler.length; i += 1) {
   toggler[i].addEventListener('click', () => toggle(i));
 }
 
-const jsn = [
-  {
-    row: 0,
-    'rec-0': {
-      date: 20220121,
-      tags: ['val-0'],
-    },
-    'rec-1': {
-      date: 20220116,
-      url: 'https://example.com/a',
-    },
-  },
-  {
-    row: 1,
-    'rec-0': {
-      date: 20220116,
-      url: 'https://example.com/b',
-    },
-    'rec-1': {
-      tags: ['val-0', 'val-1'],
+const jsn = {
+  Beverages: {
+    Water: {},
+    Coffee: {},
+    Tea: {
+      'Black Tea': {},
+      'White Tea': {},
+      'Green Tea': {
+        Sencha: {},
+        Gyokuro: {},
+        Matcha: {},
+        'Pi Lo Chun': {},
+      },
     },
   },
-];
+};
 
-const myUL = document.querySelector('#myUL');
-
-const process = async (obj) => {
+const process = async (obj, elem) => {
   Object.keys(obj).forEach((key) => {
     if (typeof obj[key] === 'object' && obj[key] !== null) {
-      const ul = document.createElement('ul');
-      ul.textContent = key;
-      myUL.append(ul);
-
-      process(obj[key]);
+      console.log(typeof elem);
+      const li = elem.createElement('li');
+      li.classList.add('caret');
+      li.textContent = obj[key];
+      elem.append(li);
+      const ul = elem.createElement('ul');
+      ul.classList.add('nested');
+      elem.append(ul);
+      process(obj[key], ul);
     } else {
-      const li = document.createElement('li');
-      li.textContent = key;
-      myUL.append(li);
+      const li = elem.createElement('li');
+      li.textContent = obj[key];
+      elem.append(li);
     }
   });
 };
 
-process(jsn);
+const divjsn = document.querySelector('#jsn');
+process(jsn, divjsn);
