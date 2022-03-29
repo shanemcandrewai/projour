@@ -65,88 +65,29 @@ class ExpandingList extends HTMLUListElement {
 // Define the new element
 customElements.define('expanding-list', ExpandingList, { extends: 'ul' });
 
-/* const jsn = {
-  Beverages: {
-    Water: {},
-    Coffee: {},
-    Tea: {
-      'Black Tea': {},
-      'White Tea': {},
-      'Green Tea': {
-        Sencha: {},
-        Gyokuro: {},
-        Matcha: {},
-        'Pi Lo Chun': {},
+const jsn = {
+  UK: {
+    Yorkshire: {
+      Leeds: {
+        'Train station': {},
+        'Town hall': {},
+        Headrow: {},
       },
+      Bradford: {},
+      Hull: {},
     },
   },
-}; */
-
-/*
-const process = async (obj, elem) => {
-  Object.keys(obj).forEach((key) => {
-    if (typeof obj[key] === 'object' && obj[key] !== null) {
-      console.log(typeof elem);
-      const li = elem.createElement('li');
-      li.classList.add('caret');
-      li.textContent = obj[key];
-      elem.append(li);
-      const ul = elem.createElement('ul');
-      ul.classList.add('nested');
-      elem.append(ul);
-      process(obj[key], ul);
-    } else {
-      const li = elem.createElement('li');
-      li.textContent = obj[key];
-      elem.append(li);
-    }
-  });
-};
- */
-
-/* eslint no-param-reassign: ["error", { "props": false }] */
-// const expl = document.querySelector('#expl');
-// const jsnl = {};
-// toJSON(expl, jsnl);
-
-const toJSON = async (elem, path) => {
-  for (let i = 0; i < elem.childNodes.length; i += 1) {
-    path.push(i);
-    if (elem.childNodes[i].nodeType === 3 && elem.childNodes[i].textContent[0] !== '\n') {
-      // path.pop();
-      // path.push([i, elem.childNodes[i].textContent]);
-      console.log('childNodes', path, elem.childNodes[i]);
-    }
-    toJSON(elem.childNodes[i], path);
-    path.pop();
-  }
-  return 1;
+  USA: {
+    California: {
+      'Los Angeles': {},
+      'San Francisco': {},
+      Berkeley: {},
+    },
+    Nevada: {},
+    Oregon: {},
+  },
 };
 
-const jsn = toJSON(document.getElementById('expl'), []);
+const createList = (obj) => {
 
-/* function eachNode(rootNode, callback) {
-  if (!callback) {
-    const nodes = [];
-    eachNode(rootNode, (node) => {
-      nodes.push(node);
-    });
-    return nodes;
-  }
-
-  if (callback(rootNode) === false) {
-    return false;
-  }
-
-  if (rootNode.hasChildNodes()) {
-    const nodes = rootNode.childNodes;
-    for (let i = 0, l = nodes.length; i < l; i += 1) {
-      if (eachNode(nodes[i], callback) === false) {
-        return undefined;
-      }
-    }
-  }
-  return undefined;
-}
-
-console.log(eachNode(document.getElementById('expl'))); */
+};
