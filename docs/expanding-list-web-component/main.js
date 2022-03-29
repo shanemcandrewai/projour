@@ -88,6 +88,63 @@ const jsn = {
   },
 };
 
-const createList = (obj) => {
+const treeVars = {};
 
+treeVars.h1 = document.createElement('h1');
+treeVars.h1.append('Dynamic ML list');
+document.body.append(treeVars.h1);
+
+treeVars.ul1 = document.createElement('ul');
+treeVars.ul1.setAttribute('is', 'expanding-list');
+document.body.append(treeVars.ul1);
+
+treeVars.li1 = document.createElement('li');
+treeVars.li1.append('UK');
+treeVars.ul1.append(treeVars.li1);
+
+treeVars.ul2 = document.createElement('ul');
+treeVars.li2 = document.createElement('li');
+treeVars.li2.append('Yorkshire');
+treeVars.ul2.append(treeVars.li2);
+treeVars.li1.append(treeVars.ul2);
+
+treeVars.ul3 = document.createElement('ul');
+treeVars.li3 = document.createElement('li');
+treeVars.li3.append('Leeds');
+treeVars.ul3.append(treeVars.li3);
+treeVars.li2.append(treeVars.ul3);
+
+treeVars.ul4 = document.createElement('ul');
+treeVars.li4 = document.createElement('li');
+treeVars.li4.append('Train station');
+treeVars.ul4.append(treeVars.li4);
+treeVars.li3.append(treeVars.ul4);
+
+treeVars.ul4 = document.createElement('ul');
+treeVars.li4 = document.createElement('li');
+treeVars.li4.append('Town hall');
+treeVars.ul4.append(treeVars.li4);
+treeVars.li3.append(treeVars.ul4);
+
+treeVars.ul4 = document.createElement('ul');
+treeVars.li4 = document.createElement('li');
+treeVars.li4.append('Headrow');
+treeVars.ul4.append(treeVars.li4);
+treeVars.li3.append(treeVars.ul4);
+
+treeVars.ul3 = document.createElement('ul');
+treeVars.li3 = document.createElement('li');
+treeVars.li3.append('Bradford');
+treeVars.ul3.append(treeVars.li3);
+treeVars.li2.append(treeVars.ul3);
+
+const addNode = (text, level) => {
+  treeVars[`ul${level}`] = document.createElement('ul');
+  treeVars[`li${level}`] = document.createElement('li');
+  treeVars[`li${level}`].append(text);
+  treeVars[`ul${level}`].append(treeVars[`li${level}`]);
+  treeVars[`li${level - 1}`].append(treeVars[`ul${level}`]);
 };
+
+addNode('Hull', 3);
+addNode('USA', 2);
