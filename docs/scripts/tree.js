@@ -53,7 +53,8 @@ addNode(jsn);
 
 const toggler = document.getElementsByClassName('caret');
 const toggle = (ind) => {
-  toggler[ind].parentElement.querySelector('.nested').classList.toggle('active');
+  // toggler[ind].parentElement.querySelector('.nested').classList.toggle('active');
+  toggler[ind].nextElementSibling.classList.toggle('active');
   toggler[ind].classList.toggle('caret-down');
 };
 for (let i = 0; i < toggler.length; i += 1) {
