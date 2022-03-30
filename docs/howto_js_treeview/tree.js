@@ -9,7 +9,7 @@ for (let i = 0; i < toggler.length; i += 1) {
   toggler[i].addEventListener('click', () => toggle(i));
 }
 
-const jsn = {
+/* const jsn = {
   Beverages: {
     Water: {},
     Coffee: {},
@@ -47,4 +47,4 @@ const process = async (obj, elem) => {
 };
 
 const divjsn = document.querySelector('#jsn');
-process(jsn, divjsn);
+process(jsn, divjsn); */

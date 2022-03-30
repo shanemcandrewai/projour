@@ -104,6 +104,19 @@ Registers `loginPost()` event handler for `butLogin`
 
 ###### `req.session` is returned to client
 
+## building a multi-level HTML list from JSON
+### level 0
+- create ul0
+- ul0.setAttribute('is', 'expanding-list')
+- append ul0 to document.body
+### level 1 (NodeJSON)
+- create li1
+- append NodeJSON.key to li1
+- append li1 to ul0 level 0
+#### if NodeJSON[key]
+- create ul1
+- append ul1 to li1
+
 ## Package and development tools installation
 
 ### [Express](https://expressjs.com/en/starter/installing.html)
