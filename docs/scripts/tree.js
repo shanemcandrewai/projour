@@ -39,6 +39,8 @@ const addNode = (parent, level = 1) => {
     if (Object.keys(child[1]).length) {
       treeVars[`ul${level}`] = document.createElement('ul');
       treeVars[`li${level}`].append(treeVars[`ul${level}`]);
+      treeVars[`ul${level}`].classList.add('nested');
+      treeVars[`li${level}`].classList.add('caret');
       addNode(child[1], level + 1);
     }
   });
@@ -46,3 +48,16 @@ const addNode = (parent, level = 1) => {
 
 addNode(jsn);
 
+const toggler = document.getElementsByClassName('caret');
+
+const toggle = (ind) => {
+  console.log(ind);
+  console.log(toggler[ind].parentElement.querySelector('.nested'));
+
+  toggler[ind].parentElement.querySelector('.nested').classList.toggle('active');
+
+  toggler[ind].classList.toggle('caret-down');
+};
+for (let i = 0; i < toggler.length; i += 1) {
+  toggler[i].addEventListener('click', () => toggle(i));
+}
