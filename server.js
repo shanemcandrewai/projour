@@ -85,7 +85,7 @@ const restrict = (req, res, next) => {
 };
 
 app.get('/', restrict, (req, res) => {
-  res.sendFile(path.resolve('docs/expanding-list-web-component/index.html'));
+  res.sendFile(path.resolve('docs/tree.html'));
 });
 
 app.get('/message', (req, res) => {
