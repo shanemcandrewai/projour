@@ -26,36 +26,27 @@ const mllist = document.getElementById('ml-list');
 treeVars.ul0 = document.createElement('ul');
 mllist.append(treeVars.ul0);
 
-const addNode = (parent, level = 1) => {
+const addNodes = (parent, level = 1) => {
   Object.entries(parent).forEach((child) => {
     treeVars[`li${level}`] = document.createElement('li');
     treeVars[`li${level}`].append(child[0]);
     treeVars[`ul${level - 1}`].append(treeVars[`li${level}`]);
     if (Object.keys(child[1]).length) {
-      /*       treeVars[`span${level}`] = document.createElement('span');
-      treeVars[`span${level}`].classList.add('caret');
-      treeVars[`span${level}`].append(child[0]);
-      treeVars[`li${level}`].append(treeVars[`span${level}`]); */
       treeVars[`li${level}`].classList.add('caret');
       treeVars[`ul${level}`] = document.createElement('ul');
       treeVars[`ul${level}`].classList.add('closed');
       treeVars[`li${level}`].append(treeVars[`ul${level}`]);
-      addNode(child[1], level + 1);
+      addNodes(child[1], level + 1);
     }
   });
 };
 
-addNode(jsn);
+addNodes(jsn);
 
-const toggler = document.getElementsByClassName('caret');
-const toggle = (ind) => {
-  console.log(ind, toggler[ind].querySelector('UL'));
-  toggler[ind].querySelector('UL').classList.toggle('open');
-  toggler[ind].classList.toggle('caret-down');
+const toggle = (event, elem) => {
+  elem.querySelector('UL').classList.toggle('open');
+  elem.classList.toggle('caret-down');
+  event.stopPropagation();
 };
-for (let i = 0; i < toggler.length; i += 1) {
-  toggler[i].addEventListener('click', () => toggle(i));
-}
 
-// const dropdownMacos = document.getElementById('dropdownMacos');
-// dropdownMacos.addEventListener('click', () => console.log('dropdownMacos.setAttribute'));
+Array.from(document.getElementsByClassName('caret')).forEach((elem) => elem.addEventListener('click', (ev) => toggle(ev, elem)));
