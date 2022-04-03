@@ -6,7 +6,7 @@ ul {
 /* Style the caret/arrow */
 .caret {
   cursor: pointer;
-  user-select: none; /* Prevent text selection */
+  /* user-select: none; */ /* Prevent text selection */
 }
 
 /* Create the caret/arrow with a unicode, and style it */
@@ -23,7 +23,7 @@ ul {
 }
 
 /* Hide the nested list */
-.closed {
+.nested {
   display: none;
 }
 

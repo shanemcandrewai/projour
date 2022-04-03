@@ -28,7 +28,9 @@ app.use(
       scriptSrc: ["'self'",
         'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'],
       connectSrc: ['http://localhost:3000/login', 'https://projour.herokuapp.com/login',
-        'http://localhost:3000/message', 'https://projour.herokuapp.com/message'],
+        'http://localhost:3000/message', 'https://projour.herokuapp.com/message',
+        'http://localhost:3000/save', 'https://projour.herokuapp.com/save',
+        'http://localhost:3000/load', 'https://projour.herokuapp.com/load'],
     },
   }),
 );
@@ -118,7 +120,9 @@ const loginRedis = async (req) => {
   try {
     await userClient.connect();
     await userClient.set('testKey', 'testValue');
+    req.session.url = req.body.url;
     req.session.user = req.body.user;
+    req.session.password = req.body.password;
     req.session.from = 'ProJour';
     req.session.message = `Currently logged in as ${req.body.user}`;
     await saveSession(req);
@@ -135,6 +139,65 @@ const loginRedis = async (req) => {
 
 app.post('/login', async (req, res) => {
   res.json(await loginRedis(req));
+});
+
+// save redis recurs
+const saveRedisRecurs = async (userClient, data, dataPath = []) => {
+  dataPath.push(0);
+  Object.entries(data).forEach(([key, value]) => {
+    if (typeof value === 'object' && Object.keys(value).length) {
+      saveRedisRecurs(value, dataPath);
+    } else {
+      // dataPath.push(dataPath.pop() + 1);
+      userClient.hSet(`data.${dataPath}`, key, value);
+    }
+  });
+};
+
+// save post
+const save = async (req) => {
+  const userClient = createClient({
+    url: req.session.url,
+    username: req.session.user,
+    password: req.session.password,
+  });
+  try {
+    await userClient.connect();
+    await saveRedisRecurs(userClient, req.body.data);
+    // Object.entries(req.body.data).forEach((prop) => )
+    // const data = req.body.data;
+
+    await userClient.hSet('data', 'UK', 'Yorkshire');
+    await userClient.hSet('data', 'USA', 'California');
+    return { from: 'ProJour', message: 'saved successfully' };
+  } catch (error) {
+    return { from: req.body.url, message: error.toString() };
+  }
+};
+
+app.post('/save', async (req, res) => {
+  res.json(await save(req));
+});
+
+// load get
+const load = async (req) => {
+  const userClient = createClient({
+    url: req.session.url,
+    username: req.session.user,
+    password: req.session.password,
+  });
+  try {
+    await userClient.connect();
+    console.log(await userClient.hGetAll('data'));
+    return await userClient.hGetAll('data');
+  } catch (error) {
+    console.log(error.toString());
+    return { from: req.body.url, message: error.toString() };
+  }
+};
+
+app.get('/load', async (req, res) => {
+  res.json(await load(req));
 });
 
 app.get('/logout', (req, res) => {
