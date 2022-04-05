@@ -25,34 +25,53 @@ const dataOrig = {
 };
 
 // save redis
-const saveRedis = async (userClient, data, dataPath = []) => {
+const saveRedis = async (userClient, dataPath = [], data = dataOrig) => {
+  const promises = [];
   dataPath.push(0);
   Object.entries(data).forEach(([key, value]) => {
     if (typeof value === 'object' && Object.keys(value).length) {
-      saveRedis(value, dataPath);
+      promises.push(userClient.hSet('data', `${dataPath},${key}`));
+      console.log('xo', `${dataPath},${key}`);
+      promises.push(saveRedis(userClient, dataPath, value));
       dataPath.push(dataPath.pop() + 1);
     } else {
-      userClient.hSet(`data.${dataPath}`, key, value);
+      promises.push(userClient.hSet('data', `${dataPath},${key}`, value));
+      console.log('xp', `${dataPath},${key}`, value);
     }
   });
+  dataPath.pop();
+  return promises;
 };
 
-const loadRedis = async (userClient, data = [], dataPath = []) => {
-  dataPath.push(0);
-  while (userClient.EXISTS(`data.${dataPath}`)) {
-    data.push(userClient.HGETALL(`data.${dataPath}`));
-    dataPath.push(dataPath.pop() + 1);
-  }
+const loadRedis = async (userClient) => {
+  console.log(await userClient.HSCAN('data', 0));
+};
+
+const testRedis = async (userClient) => {
+  await userClient.set('key', 'value');
+  const promises = [];
+  Object.entries({ a: 1, b: { d: 2 }, c: 3 }).forEach(([key, value]) => {
+    console.log('xxx');
+    promises.push(userClient.set(key, value));
+  });
+  console.log(promises);
+  await Promise.all(promises);
+  console.log(promises);
 };
 
 const userClient = createClient({
-  url: process.env.URL,
-  username: process.env.USERNAME,
-  password: process.env.PASSWORD,
+  url: process.env.URL_TEST,
+  username: process.env.USERNAME_TEST,
+  password: process.env.PASSWORD_TEST,
 });
+
 try {
   await userClient.connect();
-  await saveRedis(userClient, dataOrig);
+  await userClient.HDEL('data', 'UK');
+  await Promise.all(await saveRedis(userClient));
+  console.log('yyy');
+  await loadRedis(userClient);
+  await userClient.quit();
 } catch (error) {
   console.log(error.toString());
 }
