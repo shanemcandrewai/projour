@@ -188,10 +188,8 @@ const load = async (req) => {
   });
   try {
     await userClient.connect();
-    console.log(await userClient.hGetAll('data'));
     return await userClient.hGetAll('data');
   } catch (error) {
-    console.log(error.toString());
     return { from: req.body.url, message: error.toString() };
   }
 };

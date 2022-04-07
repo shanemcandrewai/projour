@@ -6,7 +6,7 @@ const dataOrig = {
     Yorkshire: {
       Leeds: {
         'Train station': {},
-        'Town hall': {},
+        'Town hall': 2,
         Headrow: {},
       },
       Bradford: {},
@@ -25,33 +25,51 @@ const dataOrig = {
 };
 
 // save redis
-const saveRedis = async (userClient, dataPath = [], data = dataOrig) => {
+const saveRedis = async (userClient, keyPath = '', data = dataOrig, separator = '|') => {
   const promises = [];
-  dataPath.push(0);
   Object.entries(data).forEach(([key, value]) => {
     if (typeof value === 'object' && Object.keys(value).length) {
-      promises.push(userClient.hSet('data', `${dataPath},${key}`));
-      console.log('xo', `${dataPath},${key}`);
-      promises.push(saveRedis(userClient, dataPath, value));
-      dataPath.push(dataPath.pop() + 1);
+      promises.push(saveRedis(userClient, `${keyPath}${separator}${key}`, value));
+    } else if (typeof value === 'object') {
+      promises.push(userClient.hSet('data', `${keyPath}${separator}${key}`));
     } else {
-      promises.push(userClient.hSet('data', `${dataPath},${key}`, value));
-      console.log('xp', `${dataPath},${key}`, value);
+      promises.push(userClient.hSet('data', `${keyPath}${separator}${key}`, value));
     }
   });
-  dataPath.pop();
   return promises;
 };
 
-const loadRedis = async (userClient) => {
-  console.log(await userClient.HSCAN('data', 0));
+/* const loadScan = async (key, dataPath = []) => {
+  const jsn = {};
+  dataPath.push(0);
+  while key
+  const val = key.split(',').pop();
+  if (key === dataPath + val) {
+    jsn.key = '';
+  }
+  return loadScan(key, dataPath);
+
+}; */
+
+const loadRedis = async (userClient, key = 'data', separator = '|') => {
+  const jsn = {};
+  Object.entries(await userClient.HGETALL(key)).forEach(([field, value]) => {
+    let path = '';
+    field.split(separator).forEach((pathComp, ind) => {
+      if (ind) {
+        path += `['${pathComp}']`;
+      }
+    });
+    console.log('xxx', path);
+    jsn[path] = {};
+  });
+  console.log('jsn', jsn);
 };
 
 const testRedis = async (userClient) => {
   await userClient.set('key', 'value');
   const promises = [];
   Object.entries({ a: 1, b: { d: 2 }, c: 3 }).forEach(([key, value]) => {
-    console.log('xxx');
     promises.push(userClient.set(key, value));
   });
   console.log(promises);
@@ -67,10 +85,14 @@ const userClient = createClient({
 
 try {
   await userClient.connect();
-  await userClient.HDEL('data', 'UK');
+
+  const hkeys = await userClient.HKEYS('data');
+  console.log('Deleted: ', await userClient.HDEL('data', hkeys));
   await Promise.all(await saveRedis(userClient));
-  console.log('yyy');
-  await loadRedis(userClient);
+
+  // console.log('hkeys', hkeys);
+  console.log(await userClient.HGETALL('data'));
+  // await loadRedis(userClient);
   await userClient.quit();
 } catch (error) {
   console.log(error.toString());
