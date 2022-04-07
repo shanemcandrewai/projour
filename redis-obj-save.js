@@ -54,14 +54,21 @@ const saveRedis = async (userClient, keyPath = '', data = dataOrig, separator = 
 const loadRedis = async (userClient, key = 'data', separator = '|') => {
   const jsn = {};
   Object.entries(await userClient.HGETALL(key)).forEach(([field, value]) => {
-    let path = '';
-    field.split(separator).forEach((pathComp, ind) => {
-      if (ind) {
-        path += `['${pathComp}']`;
+    console.log('xxx', field, value);
+    const thisComp = {};
+    let lastComp = '';
+    const pp = field.split(separator).reverse();
+    pp.pop();
+    pp.forEach((pathComp, ind) => {
+      console.log('yyy', ind, pathComp);
+      if (lastComp) {
+        thisComp[pathComp] = lastComp;
+        lastComp = thisComp;
+      } else {
+        lastComp = pathComp;
       }
     });
-    console.log('xxx', path);
-    jsn[path] = {};
+    console.log('zzz', thisComp);
   });
   console.log('jsn', jsn);
 };
@@ -89,10 +96,8 @@ try {
   const hkeys = await userClient.HKEYS('data');
   console.log('Deleted: ', await userClient.HDEL('data', hkeys));
   await Promise.all(await saveRedis(userClient));
-
-  // console.log('hkeys', hkeys);
   console.log(await userClient.HGETALL('data'));
-  // await loadRedis(userClient);
+  await loadRedis(userClient);
   await userClient.quit();
 } catch (error) {
   console.log(error.toString());
