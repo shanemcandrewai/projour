@@ -142,17 +142,7 @@ app.post('/login', async (req, res) => {
 });
 
 // save redis recurs
-const saveRedisRecurs = async (userClient, data, dataPath = []) => {
-  dataPath.push(0);
-  Object.entries(data).forEach(([key, value]) => {
-    if (typeof value === 'object' && Object.keys(value).length) {
-      saveRedisRecurs(value, dataPath);
-    } else {
-      // dataPath.push(dataPath.pop() + 1);
-      userClient.hSet(`data.${dataPath}`, key, value);
-    }
-  });
-};
+const saveRedisRecurs = async (userClient) => userClient.hSet('data', 'key', 'value');
 
 // save post
 const save = async (req) => {

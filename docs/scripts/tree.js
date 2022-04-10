@@ -49,7 +49,7 @@ const toggle = (event, elem) => {
   event.stopPropagation();
 };
 
-Array.from(document.getElementsByClassName('caret')).forEach((elem) => elem.addEventListener('click', (ev) => toggle(ev, elem)));
+Array.from(document.getElementsByClassName('caret')).forEach((elem) => elem.addEventListener('click', (event) => toggle(event, elem)));
 
 const save = async (resource = 'save', data = jsn) => {
   try {
@@ -81,7 +81,6 @@ const load = async (resource = 'load') => {
     });
     const ret = await resp.json();
     treeVars = {};
-    console.log(ret);
     while (mllist.firstChild) {
       mllist.removeChild(mllist.lastChild);
     }
