@@ -2,7 +2,7 @@ const jsn = {
   UK: {
     Yorkshire: {
       Leeds: {
-        'Train station': {},
+        'Train station': 2,
         'Town hall': {},
         Headrow: {},
       },

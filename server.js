@@ -142,7 +142,19 @@ app.post('/login', async (req, res) => {
 });
 
 // save redis recurs
-const saveRedisRecurs = async (userClient) => userClient.hSet('data', 'key', 'value');
+const saveRecurs = async (userClient, data, propPath = [], separator = '|') => {
+  Object.entries(data).reduce(async (result, [key, value]) => {
+    if (typeof value === 'object' && Object.keys(value).length) {
+      propPath.push(key);
+      const prom = saveRecurs(userClient, value, propPath);
+      propPath.pop();
+      return prom;
+    }
+    const hash = propPath.reduce((pathStr, pathComp) => `${pathStr}${separator}${pathComp}`, 'data');
+    // console.log(hash, key, value);
+    return userClient.hSet(hash, key, value);
+  }, []);
+};
 
 // save post
 const save = async (req) => {
@@ -153,12 +165,7 @@ const save = async (req) => {
   });
   try {
     await userClient.connect();
-    await saveRedisRecurs(userClient, req.body.data);
-    // Object.entries(req.body.data).forEach((prop) => )
-    // const data = req.body.data;
-
-    await userClient.hSet('data', 'UK', 'Yorkshire');
-    await userClient.hSet('data', 'USA', 'California');
+    await saveRecurs(userClient, req.body.data);
     return { from: 'ProJour', message: 'saved successfully' };
   } catch (error) {
     return { from: req.body.url, message: error.toString() };
