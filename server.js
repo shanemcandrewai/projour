@@ -142,7 +142,7 @@ app.post('/login', async (req, res) => {
 });
 
 // save redis recurs
-const saveRecurs = async (userClient, data, propPath = [], separator = '|') => {
+const saveRecurs = async (userClient, data, propPath = [], separator = '|', hash = 'data') => {
   Object.entries(data).reduce(async (result, [key, value]) => {
     if (typeof value === 'object' && Object.keys(value).length) {
       propPath.push(key);
@@ -150,9 +150,11 @@ const saveRecurs = async (userClient, data, propPath = [], separator = '|') => {
       propPath.pop();
       return prom;
     }
-    const hash = propPath.reduce((pathStr, pathComp) => `${pathStr}${separator}${pathComp}`, 'data');
-    // console.log(hash, key, value);
-    return userClient.hSet(hash, key, value);
+    const keyPath = propPath.reduce((pathStr, pathComp) => `${pathStr}${separator}${pathComp}`) + separator + key;
+    if (!Object.keys(value).length && Object.getPrototypeOf(value) === Object.prototype) {
+      return userClient.hSet(hash, keyPath, '');
+    }
+    return userClient.hSet(hash, keyPath, value);
   }, []);
 };
 
@@ -177,7 +179,7 @@ app.post('/save', async (req, res) => {
 });
 
 // load get
-const load = async (req) => {
+const load = async (req, separator = '|') => {
   const userClient = createClient({
     url: req.session.url,
     username: req.session.user,
@@ -185,7 +187,19 @@ const load = async (req) => {
   });
   try {
     await userClient.connect();
-    return await userClient.hGetAll('data');
+    // const keys = await userClient.HKEYS('data');
+    // await userClient.HDEL('data', await userClient.HKEYS('data'));
+    const data = await userClient.hGetAll('data');
+    const jsn = {};
+    Object.entries(data).reduce((result, [longKey, value]) => {
+      longKey.split(separator).reduce((acc, key, ind, keys) => {
+        if (acc[key]) return acc[key];
+        if (ind === keys.length - 1) { acc[key] = value; } else { acc[key] = {}; }
+        return acc[key];
+      }, jsn);
+      return 1;
+    }, {});
+    return jsn;
   } catch (error) {
     return { from: req.body.url, message: error.toString() };
   }

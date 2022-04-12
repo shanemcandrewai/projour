@@ -3,7 +3,7 @@ const jsn = {
     Yorkshire: {
       Leeds: {
         'Train station': 2,
-        'Town hall': {},
+        'Town hall2': {},
         Headrow: {},
       },
       Bradford: {},
@@ -41,15 +41,11 @@ const addNodes = (parent, level = 1) => {
   });
 };
 
-addNodes(jsn);
-
 const toggle = (event, elem) => {
   elem.querySelector('UL').classList.toggle('open');
   elem.classList.toggle('caret-down');
   event.stopPropagation();
 };
-
-Array.from(document.getElementsByClassName('caret')).forEach((elem) => elem.addEventListener('click', (event) => toggle(event, elem)));
 
 const save = async (resource = 'save', data = jsn) => {
   try {
@@ -87,6 +83,7 @@ const load = async (resource = 'load') => {
     treeVars.ul0 = document.createElement('ul');
     mllist.append(treeVars.ul0);
     addNodes(ret);
+    Array.from(document.getElementsByClassName('caret')).forEach((elem) => elem.addEventListener('click', (event) => toggle(event, elem)));
   } catch (error) {
     document.getElementById('from').innerHTML = 'tree.js';
     document.getElementById('message').innerHTML = error;
