@@ -191,7 +191,7 @@ const load = async (req, separator = '|') => {
     // await userClient.HDEL('data', await userClient.HKEYS('data'));
     const data = await userClient.hGetAll('data');
     const jsn = {};
-    Object.entries(data).reduce((result, [longKey, value]) => {
+    return Object.entries(data).reduce((result, [longKey, value]) => {
       longKey.split(separator).reduce((acc, key, ind, keys) => {
         if (acc[key]) return acc[key];
         if (ind === keys.length - 1) { acc[key] = value; } else { acc[key] = {}; }
@@ -199,7 +199,7 @@ const load = async (req, separator = '|') => {
       }, jsn);
       return 1;
     }, {});
-    return jsn;
+    // return jsn;
   } catch (error) {
     return { from: req.body.url, message: error.toString() };
   }
