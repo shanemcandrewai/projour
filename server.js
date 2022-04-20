@@ -194,10 +194,10 @@ const load = async (req, separator = '|') => {
     Object.entries(data).reduce((result, [longKey, value]) => {
       longKey.split(separator).reduce((acc, key, ind, keys) => {
         if (acc[key]) return acc[key];
-        if (ind === keys.length - 1) { acc[key] = value; } else { acc[key] = {}; }
+        if (ind === keys.length - 1) acc[key] = value; else acc[key] = {};
         return acc[key];
       }, jsn);
-      return 1;
+      return 0;
     }, {});
     return jsn;
   } catch (error) {
