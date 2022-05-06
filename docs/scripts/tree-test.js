@@ -23,8 +23,9 @@ const jsn = [
 ];
 
 const toggle = (event, elem) => {
-  elem.querySelector('UL').style.display = 'none';
-  elem.classList.toggle('caret-down');
+  const ul = elem.querySelector('UL');
+  if (ul.style.display === 'none') ul.style.display = 'block';
+  else ul.style.display = 'none';
   event.stopPropagation();
 };
 
